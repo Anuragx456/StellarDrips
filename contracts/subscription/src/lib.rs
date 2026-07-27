@@ -23,7 +23,8 @@
 #![no_std]
 
 use soroban_sdk::{
-    contract, contractimpl, contracttype, symbol_short, Address, Env, Symbol,
+    contract, contractimpl, contracttype, panic_with_error, symbol_short, token, Address, Env,
+    Error, Symbol,
 };
 
 // ---------------------------------------------------------------------------
@@ -63,6 +64,15 @@ pub struct SubscriptionKey {
     pub id: u32,
 }
 
+/// Internal storage key type.
+#[contracttype]
+pub enum DataKey {
+    /// Number of subscriptions created for an address.
+    Counter(Address),
+    /// Full subscription record keyed by (subscriber, id).
+    Sub(SubscriptionKey),
+}
+
 // ---------------------------------------------------------------------------
 // Events
 // ---------------------------------------------------------------------------
@@ -98,6 +108,12 @@ pub enum ContractError {
     TransferFailed = 8,
 }
 
+impl From<ContractError> for Error {
+    fn from(e: ContractError) -> Self {
+        Error::from_contract_error(e as u32)
+    }
+}
+
 // ---------------------------------------------------------------------------
 // Contract
 // ---------------------------------------------------------------------------
@@ -117,7 +133,13 @@ impl SubscriptionContract {
     /// The `recipient` receives payments.
     /// `token` is the Stellar Asset Contract address of the token to use
     /// (XLM via wrapped native, or a custom token).
-    #[allow(unused_variables)]
+    ///
+    /// ### Pre-requisites
+    ///
+    /// The `subscriber` must have previously approved this contract (or
+    /// otherwise authorised) enough tokens so the token contract's
+    /// `transfer` call succeeds.
+    #[allow(clippy::too_many_arguments)]
     pub fn subscribe(
         env: Env,
         subscriber: Address,
@@ -128,12 +150,68 @@ impl SubscriptionContract {
         initial_escrow: i128,
         expiration_time: u64,
     ) -> u32 {
-        todo!("implement subscribe")
+        // Require the subscriber's authorisation for this invocation.
+        subscriber.require_auth();
+
+        // -- Parameter validation -------------------------------------------
+        if amount <= 0 || interval_seconds == 0 {
+            panic_with_error!(&env, ContractError::InvalidParams);
+        }
+
+        if initial_escrow < amount {
+            panic_with_error!(&env, ContractError::InvalidParams);
+        }
+
+        let now = env.ledger().timestamp();
+        if expiration_time <= now {
+            panic_with_error!(&env, ContractError::InvalidParams);
+        }
+
+        // -- Generate subscription id ---------------------------------------
+        let count_key = DataKey::Counter(subscriber.clone());
+        let mut count: u32 = env.storage().instance().get(&count_key).unwrap_or(0);
+        let id = count;
+        count += 1;
+        env.storage().instance().set(&count_key, &count);
+
+        // -- Build & persist subscription -----------------------------------
+        let subscription = Subscription {
+            subscriber: subscriber.clone(),
+            recipient,
+            token: token.clone(),
+            amount,
+            interval_seconds,
+            next_payment_time: now + interval_seconds,
+            escrow_balance: initial_escrow,
+            payment_count: 0,
+            status: SubscriptionStatus::Active,
+            created_at: now,
+            expiration_time,
+        };
+
+        let sub_key = DataKey::Sub(SubscriptionKey {
+            subscriber: subscriber.clone(),
+            id,
+        });
+        env.storage().instance().set(&sub_key, &subscription);
+
+        // -- Transfer initial escrow from subscriber -> contract ------------
+        let contract_address = env.current_contract_address();
+        let token_client = token::Client::new(&env, &token);
+        token_client.transfer(&subscriber, &contract_address, &initial_escrow);
+
+        // -- Emit event ----------------------------------------------------
+        #[allow(deprecated)]
+        env.events().publish(
+            (EVENT_SUBSCRIPTION_CREATED, subscriber, id),
+            initial_escrow,
+        );
+
+        id
     }
 
     /// Top up the escrow balance of an existing active subscription.
-    #[allow(unused_variables)]
-    pub fn top_up(env: Env, subscriber: Address, id: u32, amount: i128) {
+    pub fn top_up(_env: Env, _subscriber: Address, _id: u32, _amount: i128) {
         todo!("implement top_up")
     }
 
@@ -142,20 +220,13 @@ impl SubscriptionContract {
     /// Callable by anyone (off-chain keeper).
     /// Succeeds only if the subscription is due, active, and has sufficient
     /// escrow balance.
-    #[allow(unused_variables)]
-    pub fn execute_payment(env: Env, subscriber: Address, id: u32) {
+    pub fn execute_payment(_env: Env, _subscriber: Address, _id: u32) {
         todo!("implement execute_payment")
     }
 
     /// Cancel an active subscription and refund remaining escrow to the
     /// subscriber.
-    #[allow(unused_variables)]
-    pub fn cancel(
-        env: Env,
-        subscriber: Address,
-        id: u32,
-        recipient: Address,
-    ) {
+    pub fn cancel(_env: Env, _subscriber: Address, _id: u32, _recipient: Address) {
         todo!("implement cancel")
     }
 
@@ -164,19 +235,18 @@ impl SubscriptionContract {
     // -----------------------------------------------------------------------
 
     /// Get subscription details.
-    #[allow(unused_variables)]
-    pub fn get_subscription(
-        env: Env,
-        subscriber: Address,
-        id: u32,
-    ) -> Subscription {
-        todo!("implement get_subscription")
+    pub fn get_subscription(env: Env, subscriber: Address, id: u32) -> Subscription {
+        let key = DataKey::Sub(SubscriptionKey { subscriber, id });
+        env.storage()
+            .instance()
+            .get(&key)
+            .unwrap_or_else(|| panic_with_error!(&env, ContractError::NotFound))
     }
 
     /// Get the number of subscriptions for a given subscriber.
-    #[allow(unused_variables)]
     pub fn subscription_count(env: Env, subscriber: Address) -> u32 {
-        todo!("implement subscription_count")
+        let key = DataKey::Counter(subscriber);
+        env.storage().instance().get(&key).unwrap_or(0)
     }
 }
 
@@ -187,10 +257,273 @@ impl SubscriptionContract {
 #[cfg(test)]
 mod test {
     use super::*;
+    use soroban_sdk::{
+        testutils::{Address as AddressTestTrait, Ledger},
+        token::{self, StellarAssetClient},
+    };
+
+    /// Shared test harness: creates an environment with a minted token,
+    /// funded subscriber, and a fixed ledger timestamp.
+    fn setup_env() -> (Env, Address, Address, Address, Address) {
+        let env = Env::default();
+        env.mock_all_auths();
+
+        let admin = Address::generate(&env);
+        let subscriber = Address::generate(&env);
+        let recipient = Address::generate(&env);
+
+        let stellar = env.register_stellar_asset_contract_v2(admin.clone());
+        let token = stellar.address();
+
+        // Mint 10_000 tokens to subscriber.
+        let sac = StellarAssetClient::new(&env, &token);
+        sac.mint(&subscriber, &10_000_000_000);
+
+        // Pin a deterministic ledger timestamp.
+        env.ledger().with_mut(|li| {
+            li.timestamp = 1_700_000_000;
+        });
+
+        (env, subscriber, recipient, token, admin)
+    }
+
+    /// Deploy the subscription contract, returning (client, contract_address).
+    fn deploy_contract(env: &Env) -> (SubscriptionContractClient<'_>, Address) {
+        let contract_id = env.register(SubscriptionContract, ());
+        let client = SubscriptionContractClient::new(env, &contract_id);
+        (client, contract_id)
+    }
+
+    // ======================================================================
+    // subscribe — success paths
+    // ======================================================================
 
     #[test]
-    fn test_placeholder() {
-        // First test will be written in Phase 2
-        assert!(true);
+    fn test_subscribe_creates_subscription_and_transfers_tokens() {
+        let (env, subscriber, recipient, token, _) = setup_env();
+        let (client, contract_id) = deploy_contract(&env);
+        let now = env.ledger().timestamp();
+
+        let id = client.subscribe(
+            &subscriber,
+            &recipient,
+            &token,
+            &100_000_000,              // 100  XLM per payment
+            &86_400,                   // 24 h interval
+            &500_000_000,              // 500  XLM initial escrow
+            &(now + 86_400 * 30),      // 30 d expiration
+        );
+
+        assert_eq!(id, 0);
+
+        // Subscription stored correctly.
+        let sub = client.get_subscription(&subscriber, &id);
+        assert_eq!(sub.subscriber, subscriber);
+        assert_eq!(sub.recipient, recipient);
+        assert_eq!(sub.token, token);
+        assert_eq!(sub.amount, 100_000_000);
+        assert_eq!(sub.interval_seconds, 86_400);
+        assert_eq!(sub.next_payment_time, now + 86_400);
+        assert_eq!(sub.escrow_balance, 500_000_000);
+        assert_eq!(sub.payment_count, 0);
+        assert_eq!(sub.status, SubscriptionStatus::Active);
+        assert_eq!(sub.created_at, now);
+        assert_eq!(sub.expiration_time, now + 86_400 * 30);
+
+        // Tokens moved from subscriber to contract.
+        let token_client = token::Client::new(&env, &token);
+        assert_eq!(token_client.balance(&subscriber), 9_500_000_000);
+        assert_eq!(token_client.balance(&contract_id), 500_000_000);
+    }
+
+    #[test]
+    fn test_subscribe_multiple_subscriptions_for_same_subscriber() {
+        let (env, subscriber, recipient, token, _) = setup_env();
+        let (client, contract_id) = deploy_contract(&env);
+        let now = env.ledger().timestamp();
+
+        let id0 = client.subscribe(
+            &subscriber,
+            &recipient,
+            &token,
+            &50_000_000,
+            &3600,
+            &100_000_000,
+            &(now + 86_400 * 30),
+        );
+        let id1 = client.subscribe(
+            &subscriber,
+            &recipient,
+            &token,
+            &75_000_000,
+            &7200,
+            &200_000_000,
+            &(now + 86_400 * 60),
+        );
+
+        assert_eq!(id0, 0);
+        assert_eq!(id1, 1);
+        assert_eq!(client.subscription_count(&subscriber), 2);
+
+        // Each subscription has its own data.
+        let s0 = client.get_subscription(&subscriber, &0);
+        assert_eq!(s0.amount, 50_000_000);
+        assert_eq!(s0.escrow_balance, 100_000_000);
+
+        let s1 = client.get_subscription(&subscriber, &1);
+        assert_eq!(s1.amount, 75_000_000);
+        assert_eq!(s1.escrow_balance, 200_000_000);
+
+        // Total escrow transferred.
+        let t = token::Client::new(&env, &token);
+        assert_eq!(t.balance(&contract_id), 300_000_000);
+        assert_eq!(t.balance(&subscriber), 9_700_000_000);
+    }
+
+    #[test]
+    fn test_subscription_count_independent_per_subscriber() {
+        let (env, subscriber, recipient, token, _) = setup_env();
+        let subscriber2 = Address::generate(&env);
+
+        let sac2 = StellarAssetClient::new(&env, &token);
+        sac2.mint(&subscriber2, &10_000_000_000);
+
+        let (client, _contract_id) = deploy_contract(&env);
+        let now = env.ledger().timestamp();
+
+        // Subscriber A — 2 subs.
+        client.subscribe(
+            &subscriber,
+            &recipient,
+            &token,
+            &50_000_000,
+            &3600,
+            &100_000_000,
+            &(now + 86_400 * 30),
+        );
+        client.subscribe(
+            &subscriber,
+            &recipient,
+            &token,
+            &75_000_000,
+            &7200,
+            &200_000_000,
+            &(now + 86_400 * 60),
+        );
+
+        // Subscriber B — 1 sub.
+        client.subscribe(
+            &subscriber2,
+            &recipient,
+            &token,
+            &30_000_000,
+            &3600,
+            &50_000_000,
+            &(now + 86_400 * 30),
+        );
+
+        assert_eq!(client.subscription_count(&subscriber), 2);
+        assert_eq!(client.subscription_count(&subscriber2), 1);
+    }
+
+    // ======================================================================
+    // subscribe — error paths
+    // ======================================================================
+
+    #[test]
+    #[should_panic(expected = "HostError")]
+    fn test_subscribe_amount_zero_fails() {
+        let (env, subscriber, recipient, token, _) = setup_env();
+        let (client, _) = deploy_contract(&env);
+        let now = env.ledger().timestamp();
+
+        client.subscribe(
+            &subscriber,
+            &recipient,
+            &token,
+            &0,
+            &86_400,
+            &500_000_000,
+            &(now + 86_400 * 30),
+        );
+    }
+
+    #[test]
+    #[should_panic(expected = "HostError")]
+    fn test_subscribe_interval_zero_fails() {
+        let (env, subscriber, recipient, token, _) = setup_env();
+        let (client, _) = deploy_contract(&env);
+        let now = env.ledger().timestamp();
+
+        client.subscribe(
+            &subscriber,
+            &recipient,
+            &token,
+            &100_000_000,
+            &0,
+            &500_000_000,
+            &(now + 86_400 * 30),
+        );
+    }
+
+    #[test]
+    #[should_panic(expected = "HostError")]
+    fn test_subscribe_escrow_less_than_amount_fails() {
+        let (env, subscriber, recipient, token, _) = setup_env();
+        let (client, _) = deploy_contract(&env);
+        let now = env.ledger().timestamp();
+
+        client.subscribe(
+            &subscriber,
+            &recipient,
+            &token,
+            &500_000_000,
+            &86_400,
+            &100_000_000,  // initial_escrow < amount
+            &(now + 86_400 * 30),
+        );
+    }
+
+    #[test]
+    #[should_panic(expected = "HostError")]
+    fn test_subscribe_expiration_in_past_fails() {
+        let (env, subscriber, recipient, token, _) = setup_env();
+        let (client, _) = deploy_contract(&env);
+        let now = env.ledger().timestamp();
+
+        client.subscribe(
+            &subscriber,
+            &recipient,
+            &token,
+            &100_000_000,
+            &86_400,
+            &500_000_000,
+            &(now - 1),  // expiration ≤ now
+        );
+    }
+
+    // ======================================================================
+    // get_subscription — error paths
+    // ======================================================================
+
+    #[test]
+    #[should_panic(expected = "HostError")]
+    fn test_get_subscription_not_found_fails() {
+        let (env, subscriber, _, _, _) = setup_env();
+        let (client, _) = deploy_contract(&env);
+
+        client.get_subscription(&subscriber, &999);
+    }
+
+    // ======================================================================
+    // subscription_count — edge cases
+    // ======================================================================
+
+    #[test]
+    fn test_subscription_count_zero_when_none() {
+        let (env, subscriber, _, _, _) = setup_env();
+        let (client, _) = deploy_contract(&env);
+
+        assert_eq!(client.subscription_count(&subscriber), 0);
     }
 }
