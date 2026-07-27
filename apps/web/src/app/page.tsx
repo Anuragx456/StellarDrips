@@ -2,6 +2,7 @@
 
 import { useWallet } from "@/context/WalletContext";
 import { useBalance } from "@/hooks/useBalance";
+import { PaymentForm } from "@/components/PaymentForm";
 
 function XlmBalance() {
   const { balance, isLoading, error } = useBalance();
@@ -44,19 +45,21 @@ export default function Home() {
   const { address, isConnected, isTestnet } = useWallet();
 
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-center py-32 px-16 text-center gap-8">
-        <h1 className="text-5xl font-bold tracking-tight text-black dark:text-zinc-50">
-          Stellar Drips
-        </h1>
-        <p className="max-w-lg text-lg text-zinc-600 dark:text-zinc-400">
-          Recurring payments and subscriptions on the Stellar network.
-          Powered by Soroban smart contracts.
-        </p>
+    <div className="flex flex-col flex-1 items-center bg-zinc-50 dark:bg-black">
+      <main className="flex flex-1 w-full max-w-3xl flex-col items-center py-16 px-6 text-center gap-8">
+        <header className="flex flex-col items-center gap-4">
+          <h1 className="text-5xl font-bold tracking-tight text-black dark:text-zinc-50">
+            Stellar Drips
+          </h1>
+          <p className="max-w-lg text-lg text-zinc-600 dark:text-zinc-400">
+            Recurring payments and subscriptions on the Stellar network.
+            Powered by Soroban smart contracts.
+          </p>
+        </header>
 
         {/* Wallet status */}
         {isConnected && address ? (
-          <div className="flex flex-col items-center gap-2">
+          <section className="flex flex-col items-center gap-3">
             <div className="inline-flex items-center gap-2 rounded-full bg-emerald-50 dark:bg-emerald-950 px-5 py-2 text-sm text-emerald-700 dark:text-emerald-300">
               <span className="size-2 rounded-full bg-emerald-500" />
               Wallet connected
@@ -66,7 +69,7 @@ export default function Home() {
             </code>
 
             {/* Balance */}
-            <div className="mt-2">
+            <div className="mt-1">
               <XlmBalance />
             </div>
 
@@ -76,22 +79,29 @@ export default function Home() {
               </p>
             )}
 
-            {/* Friendbot link for testnet accounts needing funds */}
+            {/* Friendbot link */}
             {isTestnet && (
               <a
                 href={`https://friendbot.stellar.org?addr=${address}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-sm text-blue-600 dark:text-blue-400 underline-offset-2 hover:underline mt-1"
+                className="text-sm text-blue-600 dark:text-blue-400 underline-offset-2 hover:underline"
               >
                 🪣 Get testnet XLM from Friendbot
               </a>
             )}
-          </div>
+          </section>
         ) : (
           <p className="text-sm text-zinc-400 dark:text-zinc-500">
             Connect your wallet using the button above to get started.
           </p>
+        )}
+
+        {/* Payment form — only when connected */}
+        {isConnected && isTestnet && (
+          <section className="w-full flex flex-col items-center pt-4 border-t border-zinc-200 dark:border-zinc-800">
+            <PaymentForm />
+          </section>
         )}
       </main>
     </div>
