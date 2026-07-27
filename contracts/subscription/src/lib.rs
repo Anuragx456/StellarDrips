@@ -318,10 +318,51 @@ impl SubscriptionContract {
         );
     }
 
-    /// Cancel an active subscription and refund remaining escrow to the
-    /// subscriber.
-    pub fn cancel(_env: Env, _subscriber: Address, _id: u32, _recipient: Address) {
-        todo!("implement cancel")
+    /// Cancel an active subscription and refund remaining escrow.
+    ///
+    /// The `subscriber` must authorise this call.
+    /// `refund_recipient` receives any remaining escrow balance.
+    pub fn cancel(
+        env: Env,
+        subscriber: Address,
+        id: u32,
+        refund_recipient: Address,
+    ) {
+        subscriber.require_auth();
+
+        let key = DataKey::Sub(SubscriptionKey {
+            subscriber: subscriber.clone(),
+            id,
+        });
+        let mut sub: Subscription = env
+            .storage()
+            .instance()
+            .get(&key)
+            .unwrap_or_else(|| panic_with_error!(&env, ContractError::NotFound));
+
+        if sub.status != SubscriptionStatus::Active {
+            panic_with_error!(&env, ContractError::NotAuthorized);
+        }
+
+        // Refund remaining escrow.
+        let contract_address = env.current_contract_address();
+        let refund_amount = sub.escrow_balance;
+        if refund_amount > 0 {
+            let token_client = token::Client::new(&env, &sub.token);
+            token_client.transfer(&contract_address, &refund_recipient, &refund_amount);
+        }
+
+        // Update subscription state.
+        sub.status = SubscriptionStatus::Cancelled;
+        sub.escrow_balance = 0;
+        env.storage().instance().set(&key, &sub);
+
+        // Emit event.
+        #[allow(deprecated)]
+        env.events().publish(
+            (EVENT_SUBSCRIPTION_CANCELLED, subscriber, id),
+            (refund_recipient, refund_amount),
+        );
     }
 
     // -----------------------------------------------------------------------
@@ -938,5 +979,164 @@ mod test {
         env.ledger().with_mut(|li| li.timestamp = now + 86_400 + 1);
 
         client.execute_payment(&subscriber, &id);
+    }
+
+    // ======================================================================
+    // cancel — success paths
+    // ======================================================================
+
+    #[test]
+    fn test_cancel_refunds_escrow_and_marks_cancelled() {
+        let (env, subscriber, recipient, token, _) = setup_env();
+        let (client, contract_id) = deploy_contract(&env);
+        let now = env.ledger().timestamp();
+
+        let id = client.subscribe(
+            &subscriber,
+            &recipient,
+            &token,
+            &100_000_000,
+            &86_400,
+            &500_000_000,
+            &(now + 86_400 * 30),
+        );
+
+        // Cancel and refund to a different address.
+        let refund_target = Address::generate(&env);
+        client.cancel(&subscriber, &id, &refund_target);
+
+        let sub = client.get_subscription(&subscriber, &id);
+        assert_eq!(sub.status, SubscriptionStatus::Cancelled);
+        assert_eq!(sub.escrow_balance, 0);
+
+        let t = token::Client::new(&env, &token);
+        assert_eq!(t.balance(&refund_target), 500_000_000);
+        assert_eq!(t.balance(&contract_id), 0);
+    }
+
+    #[test]
+    fn test_cancel_zero_escrow_succeeds() {
+        let (env, subscriber, recipient, token, _) = setup_env();
+        let (client, contract_id) = deploy_contract(&env);
+        let now = env.ledger().timestamp();
+
+        let id = client.subscribe(
+            &subscriber,
+            &recipient,
+            &token,
+            &100_000_000,
+            &86_400,
+            &500_000_000,
+            &(now + 86_400 * 30),
+        );
+
+        // Drain escrow via 5 payments.
+        env.ledger().with_mut(|li| li.timestamp = now + 86_400 + 1);
+        client.execute_payment(&subscriber, &id);
+        env.ledger().with_mut(|li| li.timestamp = now + 86_400 * 2 + 1);
+        client.execute_payment(&subscriber, &id);
+        env.ledger().with_mut(|li| li.timestamp = now + 86_400 * 3 + 1);
+        client.execute_payment(&subscriber, &id);
+        env.ledger().with_mut(|li| li.timestamp = now + 86_400 * 4 + 1);
+        client.execute_payment(&subscriber, &id);
+        env.ledger().with_mut(|li| li.timestamp = now + 86_400 * 5 + 1);
+        client.execute_payment(&subscriber, &id);
+
+        // Verify escrow is drained.
+        let sub = client.get_subscription(&subscriber, &id);
+        assert_eq!(sub.escrow_balance, 0);
+
+        // Cancel with zero escrow — should still succeed.
+        let refund_target = Address::generate(&env);
+        client.cancel(&subscriber, &id, &refund_target);
+
+        let sub = client.get_subscription(&subscriber, &id);
+        assert_eq!(sub.status, SubscriptionStatus::Cancelled);
+        assert_eq!(sub.escrow_balance, 0);
+
+        // No tokens transferred since escrow was 0.
+        let t = token::Client::new(&env, &token);
+        assert_eq!(t.balance(&refund_target), 0);
+        assert_eq!(t.balance(&contract_id), 0);
+    }
+
+    // ======================================================================
+    // cancel — error paths
+    // ======================================================================
+
+    #[test]
+    #[should_panic(expected = "HostError")]
+    fn test_cancel_not_found_fails() {
+        let (env, subscriber, _, _, _) = setup_env();
+        let (client, _) = deploy_contract(&env);
+
+        let refund_target = Address::generate(&env);
+        client.cancel(&subscriber, &999, &refund_target);
+    }
+
+    #[test]
+    #[should_panic(expected = "HostError")]
+    fn test_cancel_already_cancelled_fails() {
+        let (env, subscriber, recipient, token, _) = setup_env();
+        let (client, contract_id) = deploy_contract(&env);
+        let now = env.ledger().timestamp();
+
+        let id = client.subscribe(
+            &subscriber,
+            &recipient,
+            &token,
+            &100_000_000,
+            &86_400,
+            &500_000_000,
+            &(now + 86_400 * 30),
+        );
+
+        // Set to Cancelled via storage manipulation.
+        let sub_key = DataKey::Sub(SubscriptionKey {
+            subscriber: subscriber.clone(),
+            id,
+        });
+        env.as_contract(&contract_id, || {
+            let mut sub: Subscription =
+                env.storage().instance().get(&sub_key).unwrap();
+            sub.status = SubscriptionStatus::Cancelled;
+            env.storage().instance().set(&sub_key, &sub);
+        });
+
+        let refund_target = Address::generate(&env);
+        client.cancel(&subscriber, &id, &refund_target);
+    }
+
+    #[test]
+    #[should_panic(expected = "HostError")]
+    fn test_cancel_expired_fails() {
+        let (env, subscriber, recipient, token, _) = setup_env();
+        let (client, contract_id) = deploy_contract(&env);
+        let now = env.ledger().timestamp();
+
+        let id = client.subscribe(
+            &subscriber,
+            &recipient,
+            &token,
+            &100_000_000,
+            &86_400,
+            &500_000_000,
+            &(now + 86_400 * 30),
+        );
+
+        // Set to Expired via storage manipulation.
+        let sub_key = DataKey::Sub(SubscriptionKey {
+            subscriber: subscriber.clone(),
+            id,
+        });
+        env.as_contract(&contract_id, || {
+            let mut sub: Subscription =
+                env.storage().instance().get(&sub_key).unwrap();
+            sub.status = SubscriptionStatus::Expired;
+            env.storage().instance().set(&sub_key, &sub);
+        });
+
+        let refund_target = Address::generate(&env);
+        client.cancel(&subscriber, &id, &refund_target);
     }
 }
