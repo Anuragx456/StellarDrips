@@ -211,8 +211,44 @@ impl SubscriptionContract {
     }
 
     /// Top up the escrow balance of an existing active subscription.
-    pub fn top_up(_env: Env, _subscriber: Address, _id: u32, _amount: i128) {
-        todo!("implement top_up")
+    pub fn top_up(
+        env: Env,
+        subscriber: Address,
+        id: u32,
+        amount: i128,
+    ) {
+        subscriber.require_auth();
+
+        if amount <= 0 {
+            panic_with_error!(&env, ContractError::InvalidParams);
+        }
+
+        let key = DataKey::Sub(SubscriptionKey {
+            subscriber: subscriber.clone(),
+            id,
+        });
+        let mut sub: Subscription = env
+            .storage()
+            .instance()
+            .get(&key)
+            .unwrap_or_else(|| panic_with_error!(&env, ContractError::NotFound));
+
+        if sub.status != SubscriptionStatus::Active {
+            panic_with_error!(&env, ContractError::NotAuthorized);
+        }
+
+        // Transfer tokens from subscriber → contract.
+        let contract_address = env.current_contract_address();
+        let token_client = token::Client::new(&env, &sub.token);
+        token_client.transfer(&subscriber, &contract_address, &amount);
+
+        // Update escrow balance.
+        sub.escrow_balance += amount;
+        env.storage().instance().set(&key, &sub);
+
+        // Emit event.
+        #[allow(deprecated)]
+        env.events().publish((EVENT_SUBSCRIPTION_TOP_UP, subscriber, id), amount);
     }
 
     /// Execute a single payment for a due subscription.
@@ -220,8 +256,66 @@ impl SubscriptionContract {
     /// Callable by anyone (off-chain keeper).
     /// Succeeds only if the subscription is due, active, and has sufficient
     /// escrow balance.
-    pub fn execute_payment(_env: Env, _subscriber: Address, _id: u32) {
-        todo!("implement execute_payment")
+    pub fn execute_payment(
+        env: Env,
+        subscriber: Address,
+        id: u32,
+    ) {
+        let key = DataKey::Sub(SubscriptionKey {
+            subscriber: subscriber.clone(),
+            id,
+        });
+        let mut sub: Subscription = env
+            .storage()
+            .instance()
+            .get(&key)
+            .unwrap_or_else(|| panic_with_error!(&env, ContractError::NotFound));
+
+        if sub.status != SubscriptionStatus::Active {
+            panic_with_error!(&env, ContractError::NotAuthorized);
+        }
+
+        let now = env.ledger().timestamp();
+
+        // Check expiration first — if expired, transition state and stop.
+        if now >= sub.expiration_time {
+            sub.status = SubscriptionStatus::Expired;
+            env.storage().instance().set(&key, &sub);
+            #[allow(deprecated)]
+            env.events().publish(
+                (EVENT_SUBSCRIPTION_EXPIRED, subscriber, id),
+                sub.escrow_balance,
+            );
+            return;
+        }
+
+        // Must be due.
+        if now < sub.next_payment_time {
+            panic_with_error!(&env, ContractError::NotDue);
+        }
+
+        // Must have sufficient escrow balance.
+        if sub.escrow_balance < sub.amount {
+            panic_with_error!(&env, ContractError::InsufficientEscrow);
+        }
+
+        // Transfer amount from contract → recipient.
+        let contract_address = env.current_contract_address();
+        let token_client = token::Client::new(&env, &sub.token);
+        token_client.transfer(&contract_address, &sub.recipient, &sub.amount);
+
+        // Update subscription state.
+        sub.escrow_balance -= sub.amount;
+        sub.payment_count += 1;
+        sub.next_payment_time = now + sub.interval_seconds;
+        env.storage().instance().set(&key, &sub);
+
+        // Emit event.
+        #[allow(deprecated)]
+        env.events().publish(
+            (EVENT_PAYMENT_EXECUTED, subscriber, id),
+            (sub.amount, sub.escrow_balance),
+        );
     }
 
     /// Cancel an active subscription and refund remaining escrow to the
@@ -525,5 +619,324 @@ mod test {
         let (client, _) = deploy_contract(&env);
 
         assert_eq!(client.subscription_count(&subscriber), 0);
+    }
+
+    // ======================================================================
+    // top_up — success paths
+    // ======================================================================
+
+    #[test]
+    fn test_top_up_increases_escrow_and_transfers_tokens() {
+        let (env, subscriber, recipient, token, _) = setup_env();
+        let (client, contract_id) = deploy_contract(&env);
+        let now = env.ledger().timestamp();
+
+        let id = client.subscribe(
+            &subscriber,
+            &recipient,
+            &token,
+            &100_000_000,
+            &86_400,
+            &500_000_000,
+            &(now + 86_400 * 30),
+        );
+
+        // Top up 200 more tokens.
+        client.top_up(&subscriber, &id, &200_000_000);
+
+        let sub = client.get_subscription(&subscriber, &id);
+        assert_eq!(sub.escrow_balance, 700_000_000);
+
+        let t = token::Client::new(&env, &token);
+        assert_eq!(t.balance(&contract_id), 700_000_000);
+        assert_eq!(t.balance(&subscriber), 9_300_000_000);
+    }
+
+    // ======================================================================
+    // top_up — error paths
+    // ======================================================================
+
+    #[test]
+    #[should_panic(expected = "HostError")]
+    fn test_top_up_zero_amount_fails() {
+        let (env, subscriber, recipient, token, _) = setup_env();
+        let (client, _) = deploy_contract(&env);
+        let now = env.ledger().timestamp();
+
+        let id = client.subscribe(
+            &subscriber,
+            &recipient,
+            &token,
+            &100_000_000,
+            &86_400,
+            &500_000_000,
+            &(now + 86_400 * 30),
+        );
+
+        client.top_up(&subscriber, &id, &0);
+    }
+
+    #[test]
+    #[should_panic(expected = "HostError")]
+    fn test_top_up_not_found_fails() {
+        let (env, subscriber, _, _, _) = setup_env();
+        let (client, _) = deploy_contract(&env);
+
+        client.top_up(&subscriber, &999, &100_000_000);
+    }
+
+    #[test]
+    #[should_panic(expected = "HostError")]
+    fn test_top_up_cancelled_subscription_fails() {
+        let (env, subscriber, recipient, token, _) = setup_env();
+        let (client, contract_id) = deploy_contract(&env);
+        let now = env.ledger().timestamp();
+
+        let id = client.subscribe(
+            &subscriber,
+            &recipient,
+            &token,
+            &100_000_000,
+            &86_400,
+            &500_000_000,
+            &(now + 86_400 * 30),
+        );
+
+        // Directly set subscription to Cancelled state via contract storage.
+        let sub_key = DataKey::Sub(SubscriptionKey {
+            subscriber: subscriber.clone(),
+            id,
+        });
+        env.as_contract(&contract_id, || {
+            let mut sub: Subscription =
+                env.storage().instance().get(&sub_key).unwrap();
+            sub.status = SubscriptionStatus::Cancelled;
+            env.storage().instance().set(&sub_key, &sub);
+        });
+
+        client.top_up(&subscriber, &id, &100_000_000);
+    }
+
+    #[test]
+    #[should_panic(expected = "HostError")]
+    fn test_top_up_expired_subscription_fails() {
+        let (env, subscriber, recipient, token, _) = setup_env();
+        let (client, contract_id) = deploy_contract(&env);
+        let now = env.ledger().timestamp();
+
+        let id = client.subscribe(
+            &subscriber,
+            &recipient,
+            &token,
+            &100_000_000,
+            &86_400,
+            &500_000_000,
+            &(now + 86_400 * 30),
+        );
+
+        // Directly set subscription to Expired state.
+        let sub_key = DataKey::Sub(SubscriptionKey {
+            subscriber: subscriber.clone(),
+            id,
+        });
+        env.as_contract(&contract_id, || {
+            let mut sub: Subscription =
+                env.storage().instance().get(&sub_key).unwrap();
+            sub.status = SubscriptionStatus::Expired;
+            env.storage().instance().set(&sub_key, &sub);
+        });
+
+        client.top_up(&subscriber, &id, &100_000_000);
+    }
+
+    // ======================================================================
+    // execute_payment — success paths
+    // ======================================================================
+
+    #[test]
+    fn test_execute_payment_transfers_tokens_and_updates_state() {
+        let (env, subscriber, recipient, token, _) = setup_env();
+        let (client, contract_id) = deploy_contract(&env);
+        let now = env.ledger().timestamp();
+
+        let id = client.subscribe(
+            &subscriber,
+            &recipient,
+            &token,
+            &100_000_000,
+            &86_400,
+            &500_000_000,
+            &(now + 86_400 * 30),
+        );
+
+        // Advance past next_payment_time.
+        env.ledger().with_mut(|li| li.timestamp = now + 86_400 + 1);
+
+        client.execute_payment(&subscriber, &id);
+
+        let sub = client.get_subscription(&subscriber, &id);
+        assert_eq!(sub.escrow_balance, 400_000_000);
+        assert_eq!(sub.payment_count, 1);
+        assert_eq!(sub.next_payment_time, now + 86_400 + 1 + 86_400);
+
+        let t = token::Client::new(&env, &token);
+        assert_eq!(t.balance(&recipient), 100_000_000);
+        assert_eq!(t.balance(&contract_id), 400_000_000);
+    }
+
+    #[test]
+    fn test_execute_payment_multiple_payments() {
+        let (env, subscriber, recipient, token, _) = setup_env();
+        let (client, contract_id) = deploy_contract(&env);
+        let now = env.ledger().timestamp();
+
+        let id = client.subscribe(
+            &subscriber,
+            &recipient,
+            &token,
+            &100_000_000,
+            &86_400,
+            &500_000_000,
+            &(now + 86_400 * 30),
+        );
+
+        // Payment 1.
+        env.ledger().with_mut(|li| li.timestamp = now + 86_400 + 1);
+        client.execute_payment(&subscriber, &id);
+
+        // Payment 2.
+        env.ledger().with_mut(|li| li.timestamp = now + 86_400 * 2 + 1);
+        client.execute_payment(&subscriber, &id);
+
+        // Payment 3.
+        env.ledger().with_mut(|li| li.timestamp = now + 86_400 * 3 + 1);
+        client.execute_payment(&subscriber, &id);
+
+        let sub = client.get_subscription(&subscriber, &id);
+        assert_eq!(sub.payment_count, 3);
+        assert_eq!(sub.escrow_balance, 200_000_000);
+
+        let t = token::Client::new(&env, &token);
+        assert_eq!(t.balance(&recipient), 300_000_000);
+        assert_eq!(t.balance(&contract_id), 200_000_000);
+    }
+
+    // ======================================================================
+    // execute_payment — error paths
+    // ======================================================================
+
+    #[test]
+    #[should_panic(expected = "HostError")]
+    fn test_execute_payment_not_found_fails() {
+        let (env, subscriber, _, _, _) = setup_env();
+        let (client, _) = deploy_contract(&env);
+
+        client.execute_payment(&subscriber, &999);
+    }
+
+    #[test]
+    #[should_panic(expected = "HostError")]
+    fn test_execute_payment_not_due_fails() {
+        let (env, subscriber, recipient, token, _) = setup_env();
+        let (client, _) = deploy_contract(&env);
+        let now = env.ledger().timestamp();
+
+        let id = client.subscribe(
+            &subscriber,
+            &recipient,
+            &token,
+            &100_000_000,
+            &86_400,
+            &500_000_000,
+            &(now + 86_400 * 30),
+        );
+
+        // Don't advance time — still before next_payment_time.
+        client.execute_payment(&subscriber, &id);
+    }
+
+    #[test]
+    #[should_panic(expected = "HostError")]
+    fn test_execute_payment_insufficient_escrow_fails() {
+        let (env, subscriber, recipient, token, _) = setup_env();
+        let (client, _) = deploy_contract(&env);
+        let now = env.ledger().timestamp();
+
+        let id = client.subscribe(
+            &subscriber,
+            &recipient,
+            &token,
+            &1_000_000_000,
+            &86_400,
+            &500_000_000,
+            &(now + 86_400 * 30),
+        );
+
+        // Advance past due — but escrow (500) < amount (1000).
+        env.ledger().with_mut(|li| li.timestamp = now + 86_400 + 1);
+
+        client.execute_payment(&subscriber, &id);
+    }
+
+    #[test]
+    fn test_execute_payment_expired_transitions_state() {
+        let (env, subscriber, recipient, token, _) = setup_env();
+        let (client, _) = deploy_contract(&env);
+        let now = env.ledger().timestamp();
+
+        let id = client.subscribe(
+            &subscriber,
+            &recipient,
+            &token,
+            &100_000_000,
+            &86_400,
+            &500_000_000,
+            &(now + 86_400 * 30),
+        );
+
+        // Advance past expiration.
+        env.ledger().with_mut(|li| li.timestamp = now + 86_400 * 30 + 1);
+
+        // execute_payment should transition to Expired and return (no panic).
+        client.execute_payment(&subscriber, &id);
+
+        let sub = client.get_subscription(&subscriber, &id);
+        assert_eq!(sub.status, SubscriptionStatus::Expired);
+        assert_eq!(sub.escrow_balance, 500_000_000);
+        assert_eq!(sub.payment_count, 0);
+    }
+
+    #[test]
+    #[should_panic(expected = "HostError")]
+    fn test_execute_payment_cancelled_fails() {
+        let (env, subscriber, recipient, token, _) = setup_env();
+        let (client, contract_id) = deploy_contract(&env);
+        let now = env.ledger().timestamp();
+
+        let id = client.subscribe(
+            &subscriber,
+            &recipient,
+            &token,
+            &100_000_000,
+            &86_400,
+            &500_000_000,
+            &(now + 86_400 * 30),
+        );
+
+        // Directly set to Cancelled.
+        let sub_key = DataKey::Sub(SubscriptionKey {
+            subscriber: subscriber.clone(),
+            id,
+        });
+        env.as_contract(&contract_id, || {
+            let mut sub: Subscription =
+                env.storage().instance().get(&sub_key).unwrap();
+            sub.status = SubscriptionStatus::Cancelled;
+            env.storage().instance().set(&sub_key, &sub);
+        });
+
+        env.ledger().with_mut(|li| li.timestamp = now + 86_400 + 1);
+
+        client.execute_payment(&subscriber, &id);
     }
 }
