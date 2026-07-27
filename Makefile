@@ -46,7 +46,7 @@ contract-test:
 
 contract-deploy-testnet:
 	cd contracts/subscription && stellar contract deploy \
-		--wasm target/wasm32v1-none/release/stellar_drips_subscription.wasm \
+		--wasm ../target/wasm32v1-none/release/stellar_drips_subscription.wasm \
 		--source testnet-keeper \
 		--network testnet
 

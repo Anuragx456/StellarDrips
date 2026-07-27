@@ -33,6 +33,9 @@ yarn-error.log*
 .soroban/identities/
 .soroban/identity/
 
+# Vercel project config
+.vercel
+
 # Scheduler / Keeper registry (contains user addresses)
 scripts/subscriptions.json
 
