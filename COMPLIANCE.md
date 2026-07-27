@@ -8,21 +8,21 @@
 
 | # | Requirement | Status | Evidence |
 |---|-------------|--------|----------|
-| 1.1 | Support Freighter wallet | ⬜ | `apps/web/src/` — wallet integration (Phase 1) |
-| 1.2 | Use Stellar Testnet | ⬜ | Network detection in wallet hook |
-| 1.3 | Implement wallet connect | ⬜ | Connect button in UI |
-| 1.4 | Implement wallet disconnect | ⬜ | Disconnect button in UI |
-| 1.5 | Fetch connected wallet XLM balance | ⬜ | Balance display component |
-| 1.6 | Display balance clearly in UI | ⬜ | Balance panel |
-| 1.7 | Send an XLM transaction on testnet | ⬜ | Payment form |
-| 1.8 | Show success/failure state | ⬜ | Transaction status component |
-| 1.9 | Show transaction hash or confirmation | ⬜ | Explorer link component |
+| 1.1 | Support Freighter wallet | ✅ | `WalletContext.tsx` uses FreighterModule |
+| 1.2 | Use Stellar Testnet | ✅ | Network detection + enforcement in wallet hook |
+| 1.3 | Implement wallet connect | ✅ | Connect button in `ConnectWallet.tsx` |
+| 1.4 | Implement wallet disconnect | ✅ | Disconnect button in `ConnectWallet.tsx` |
+| 1.5 | Fetch connected wallet XLM balance | ✅ | `useBalance.ts` via Horizon API |
+| 1.6 | Display balance clearly in UI | ✅ | Balance panel on dashboard |
+| 1.7 | Send an XLM transaction on testnet | ✅ | `PaymentForm.tsx` |
+| 1.8 | Show success/failure state | ✅ | `TransactionStatus.tsx` component |
+| 1.9 | Show transaction hash or confirmation | ✅ | Explorer link in `TransactionStatus.tsx` |
 | 1.10 | Public GitHub repository | ✅ | `https://github.com/Anuragx456/StellarDrips` |
 | 1.11 | README with description + setup + screenshots | ✅ | `README.md` |
 | 1.12 | Screenshot: wallet connected state | 👤 | `docs/screenshots/wallet-connected.png` |
 | 1.13 | Screenshot: balance displayed | 👤 | `docs/screenshots/balance-displayed.png` |
 | 1.14 | Screenshot: successful testnet transaction | 👤 | `docs/screenshots/successful-transaction.png` |
-| 1.15 | Transaction result shown to user | ⬜ | Transaction status component |
+| 1.15 | Transaction result shown to user | ✅ | `TransactionStatus.tsx` with explorer links |
 
 ---
 
@@ -30,14 +30,14 @@
 
 | # | Requirement | Status | Evidence |
 |---|-------------|--------|----------|
-| 2.1 | Support multiple wallets | ⬜ | Stellar Wallets Kit integration (Phase 2) |
-| 2.2 | Handle at least 3 error types | ⬜ | Error mapping in frontend |
-| 2.3 | Deploy contract on testnet | ⬜ | `docs/evidence/contract-address.md` |
-| 2.4 | Call contract from frontend | ⬜ | Contract interaction hooks |
-| 2.5 | Show transaction status visibly | ⬜ | Transaction status panel |
-| 2.6 | Minimum 2+ meaningful commits | ⬜ | Git log |
+| 2.1 | Support multiple wallets | ✅ | Stellar Wallets Kit with Freighter module |
+| 2.2 | Handle at least 3 error types | ✅ | ErrorBoundary + status reducers + error states everywhere |
+| 2.3 | Deploy contract on testnet | ✅ | `docs/evidence/contract-address.md` |
+| 2.4 | Call contract from frontend | ✅ | Contract hooks (useSubscribe, useTopUp, useCancel) |
+| 2.5 | Show transaction status visibly | ✅ | TransactionStatus, TopUpDialog, CancelDialog |
+| 2.6 | Minimum 2+ meaningful commits | ✅ | 9+ commits across all phases |
 | 2.7 | Screenshot: wallet options available | 👤 | `docs/screenshots/wallet-options.png` |
-| 2.8 | Deployed contract address in README | ⬜ | Contract deployed |
+| 2.8 | Deployed contract address in README | ✅ | `README.md` deployed contracts section |
 | 2.9 | Transaction hash of contract call in README | ⬜ | Contract call made |
 
 ---
@@ -46,18 +46,18 @@
 
 | # | Requirement | Status | Evidence |
 |---|-------------|--------|----------|
-| 3.1 | Advanced smart contract development | ⬜ | Inter-contract token calls |
-| 3.2 | Inter-contract communication | ⬜ | Custom test token integration |
-| 3.3 | Event streaming and real-time updates | ⬜ | Event dashboard |
+| 3.1 | Advanced smart contract development | ✅ | 6 functions, 26 tests, events, token transfers |
+| 3.2 | Inter-contract communication | ✅ | `token::Client` integration, test token deployed |
+| 3.3 | Event streaming and real-time updates | ✅ | EventDashboard with 10s polling |
 | 3.4 | CI/CD pipeline setup | ✅ | `.github/workflows/ci.yml` |
 | 3.5 | Smart contract deployment workflow | ✅ | `Makefile` + Stellar CLI |
-| 3.6 | Mobile responsive frontend | ⬜ | Responsive dashboard |
-| 3.7 | Error handling and loading states | ⬜ | Frontend error/loading/empty states |
-| 3.8 | Tests for contracts and frontend | ⬜ | Contract + frontend tests |
-| 3.9 | Production-ready architecture practices | ⬜ | To be addressed |
-| 3.10 | Documentation and demo presentation | ⬜ | Finalized in Phase 4 |
-| 3.11 | Minimum 10+ meaningful commits | ⬜ | Git log |
-| 3.12 | Live demo link on Vercel/Netlify | ⬜ | Vercel deployment |
+| 3.6 | Mobile responsive frontend | ✅ | Tailwind responsive grid (1→2→3 cols) |
+| 3.7 | Error handling and loading states | ✅ | ErrorBoundary, skeleton loading, AsyncState patterns |
+| 3.8 | Tests for contracts and frontend | ✅ | 26 contract tests + frontend component tests |
+| 3.9 | Production-ready architecture practices | ✅ | CI/CD, ErrorBoundary, tx polling, env hardening |
+| 3.10 | Documentation and demo presentation | ✅ | README, DEMO_SCRIPT.md, evidence docs |
+| 3.11 | Minimum 10+ meaningful commits | ✅ | 10+ commits across development |
+| 3.12 | Live demo link on Vercel/Netlify | ⬜ | Vercel deployment pending |
 | 3.13 | Screenshot: mobile responsive UI | 👤 | `docs/screenshots/mobile-responsive.png` |
 | 3.14 | Screenshot: CI/CD pipeline running | 👤 | `docs/screenshots/ci-pipeline.png` |
 | 3.15 | Screenshot: test output 3+ passing tests | 👤 | `docs/screenshots/test-output.png` |
@@ -69,7 +69,7 @@
 
 | Level | Total Items | ✅ PASS | ❌ FAIL | ⬜ Not Started | 🔧 In Progress | 👤 User Action |
 |-------|------------|---------|---------|----------------|----------------|--------|
-| **1** | 15 | 2 | 0 | 10 | 0 | 3 |
-| **2** | 9 | 0 | 0 | 8 | 0 | 1 |
-| **3** | 16 | 2 | 0 | 11 | 0 | 3 |
-| **Total** | 40 | 4 | 0 | 29 | 0 | 7 |
+| **1** | 15 | 12 | 0 | 0 | 0 | 3 |
+| **2** | 9 | 7 | 0 | 1 | 0 | 1 |
+| **3** | 16 | 12 | 0 | 2 | 0 | 3 |
+| **Total** | 40 | 31 | 0 | 3 | 0 | 7 |
