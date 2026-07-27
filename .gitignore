@@ -33,6 +33,13 @@ yarn-error.log*
 .soroban/identities/
 .soroban/identity/
 
+# Superpowers / Plans
+.superpowers/
+docs/superpowers/plans/
+
+# Worktrees
+.claude/worktrees/
+
 # Vercel project config
 .vercel
 
