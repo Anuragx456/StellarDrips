@@ -237,7 +237,8 @@ make ci
 
 | Contract | Network | Address |
 |----------|---------|---------|
-| Subscription | Testnet | `____________` |
+| Subscription | Testnet | `CCEWB5F27ETPU7FAQWDEWEGGTL4DIUCWNHU36RV2MDXSSGFJUDSONPAC` |
+| Test Token | Testnet | `CDFJZD3D5Y2RF27NFM4BPDMSKYMDMD5AT2ZQCAWAXAZZBONUB3M3BNCO` |
 
 See [docs/evidence/contract-address.md](docs/evidence/contract-address.md) for full details.
 
@@ -245,7 +246,7 @@ See [docs/evidence/contract-address.md](docs/evidence/contract-address.md) for f
 
 ## Demo
 
-- **Live demo:** [____________](____________)
+- **Live demo:** Pending GitHub + Vercel deployment
 - **Demo video:** [____________](____________)
 - **Demo script:** [docs/DEMO_SCRIPT.md](docs/DEMO_SCRIPT.md)
 

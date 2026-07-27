@@ -2,8 +2,8 @@
 
 ## Subscription Contract
 - **Network:** Stellar Testnet
-- **Address:** `CCYX4QZQOH6L2IHYMQGNIMS6QVJ76VPL67IZGKSODYZTVIW2YR6AB7XX`
-- **Explorer:** `https://stellar.expert/explorer/testnet/contract/CCYX4QZQOH6L2IHYMQGNIMS6QVJ76VPL67IZGKSODYZTVIW2YR6AB7XX`
+- **Address:** `CCEWB5F27ETPU7FAQWDEWEGGTL4DIUCWNHU36RV2MDXSSGFJUDSONPAC`
+- **Explorer:** https://stellar.expert/explorer/testnet/contract/CCEWB5F27ETPU7FAQWDEWEGGTL4DIUCWNHU36RV2MDXSSGFJUDSONPAC
 - **Deployed:** 2026-07-27
 - **Deployer:** testnet-keeper
 
@@ -14,4 +14,5 @@
 
 ## Identity
 - **Keeper Key:** testnet-keeper
+- **Address:** GDIZ47WTYEG5J7KFRGX6KTYCKBXIQN5EPQGZG2Q6XGY4GE5LDDBF5MYH
 - **Funded via:** Friendbot

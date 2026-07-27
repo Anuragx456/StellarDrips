@@ -1,0 +1,124 @@
+"use client";
+
+import { useReducer, useCallback } from "react";
+import {
+  TransactionBuilder,
+  Transaction,
+} from "@stellar/stellar-sdk";
+import { StellarWalletsKit } from "@creit.tech/stellar-wallets-kit";
+import { useWallet } from "@/context/WalletContext";
+import {
+  getServer,
+  getContract,
+  encodeCancelArgs,
+  getNetworkPassphrase,
+} from "@/lib/contract";
+import type { CancelInput } from "@/lib/types";
+
+export type CancelStatus =
+  | { type: "idle" }
+  | { type: "building" }
+  | { type: "signing" }
+  | { type: "submitting" }
+  | { type: "success"; txHash: string }
+  | { type: "error"; error: string };
+
+interface CancelState { status: CancelStatus; }
+type Action =
+  | { type: "building" }
+  | { type: "signing" }
+  | { type: "submitting" }
+  | { type: "success"; txHash: string }
+  | { type: "error"; error: string }
+  | { type: "reset" };
+
+function cancelReducer(_prev: CancelState, action: Action): CancelState {
+  switch (action.type) {
+    case "building": return { status: { type: "building" } };
+    case "signing": return { status: { type: "signing" } };
+    case "submitting": return { status: { type: "submitting" } };
+    case "success": return { status: { type: "success", txHash: action.txHash } };
+    case "error": return { status: { type: "error", error: action.error } };
+    case "reset": return { status: { type: "idle" } };
+  }
+}
+
+export interface UseCancelReturn {
+  status: CancelStatus;
+  execute: (input: CancelInput) => Promise<void>;
+  reset: () => void;
+}
+
+export function useCancel(): UseCancelReturn {
+  const { address } = useWallet();
+  const [state, dispatch] = useReducer(cancelReducer, { status: { type: "idle" } });
+
+  const execute = useCallback(
+    async (input: CancelInput) => {
+      if (!address) {
+        dispatch({ type: "error", error: "Wallet not connected" });
+        return;
+      }
+
+      dispatch({ type: "building" });
+
+      try {
+        const server = getServer();
+        const contract = getContract();
+        const passphrase = getNetworkPassphrase();
+        const account = await server.getAccount(address);
+
+        dispatch({ type: "signing" });
+
+        const args = encodeCancelArgs(input.subscriber, input.id, input.refundRecipient);
+        const tx = new TransactionBuilder(account, {
+          fee: "100",
+          networkPassphrase: passphrase,
+        })
+          .addOperation(contract.call("cancel", ...args))
+          .setTimeout(30)
+          .build();
+
+        const prepared = await server.prepareTransaction(tx);
+        const signedXdr = prepared.toXDR();
+        const { signedTxXdr } = await StellarWalletsKit.signTransaction(signedXdr, {
+          networkPassphrase: passphrase,
+          address,
+        });
+
+        dispatch({ type: "submitting" });
+
+        const signedTx = new Transaction(signedTxXdr, passphrase);
+        const sendResult = await server.sendTransaction(signedTx);
+
+        if (sendResult.errorResult) {
+          dispatch({ type: "error", error: `Transaction rejected: ${sendResult.errorResult}` });
+          return;
+        }
+
+        const hash = sendResult.hash;
+        let attempts = 0;
+        while (attempts < 30) {
+          attempts++;
+          const result = await server.getTransaction(hash);
+          if (result.status === "SUCCESS") {
+            dispatch({ type: "success", txHash: hash });
+            return;
+          }
+          if (result.status === "FAILED") {
+            dispatch({ type: "error", error: "Transaction failed on the network" });
+            return;
+          }
+          await new Promise((r) => setTimeout(r, 1_000));
+        }
+        dispatch({ type: "error", error: "Transaction timed out" });
+      } catch (err) {
+        dispatch({ type: "error", error: err instanceof Error ? err.message : "Cancel failed" });
+      }
+    },
+    [address],
+  );
+
+  const reset = useCallback(() => dispatch({ type: "reset" }), []);
+  return { status: state.status, execute, reset };
+}
