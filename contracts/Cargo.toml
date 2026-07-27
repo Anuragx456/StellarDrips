@@ -1,0 +1,11 @@
+[workspace]
+members = ["subscription"]
+resolver = "2"
+
+[profile.release]
+opt-level = "z"
+overflow-checks = true
+lto = true
+debug = false
+strip = true
+codegen-units = 1

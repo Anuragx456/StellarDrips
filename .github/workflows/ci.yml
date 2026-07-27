@@ -1,0 +1,76 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  RUST_VERSION: "1.97"
+  NODE_VERSION: "22"
+
+jobs:
+  contract:
+    name: Contract
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: ${{ env.RUST_VERSION }}
+          targets: wasm32v1-none
+          components: clippy, rustfmt
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: contracts
+
+      - name: Check formatting
+        working-directory: contracts/subscription
+        run: cargo fmt --check
+
+      - name: Clippy
+        working-directory: contracts/subscription
+        run: cargo clippy --all-targets -- -D warnings
+
+      - name: Test
+        working-directory: contracts/subscription
+        run: cargo test
+
+      - name: Build (wasm)
+        working-directory: contracts/subscription
+        run: cargo build --target wasm32v1-none --release
+
+  frontend:
+    name: Frontend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install dependencies
+        working-directory: apps/web
+        run: bun install
+
+      - name: Type check
+        working-directory: apps/web
+        run: bun run typecheck
+
+      - name: Lint
+        working-directory: apps/web
+        run: bun run lint
+
+      - name: Build
+        working-directory: apps/web
+        run: bun run build

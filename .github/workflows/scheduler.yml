@@ -1,0 +1,39 @@
+name: Scheduler — Execute Due Payments
+
+on:
+  schedule:
+    # Every 10 minutes — adjust as needed
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Dry run (no actual transactions)"
+        type: boolean
+        default: true
+
+concurrency:
+  group: scheduler
+  cancel-in-progress: false
+
+jobs:
+  run-scheduler:
+    name: Execute Due Payments
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install dependencies
+        working-directory: scripts
+        run: bun install
+
+      - name: Run scheduler
+        working-directory: scripts
+        run: bun run scheduler.ts
+        env:
+          RPC_URL: ${{ secrets.RPC_URL }}
+          KEEPER_SECRET_KEY: ${{ secrets.KEEPER_SECRET_KEY }}
+          CONTRACT_ID: ${{ secrets.CONTRACT_ID }}
+          SCHEDULER_DRY_RUN: ${{ inputs.dry_run == false && 'false' || 'true' }}

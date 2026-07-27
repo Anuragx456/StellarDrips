@@ -1,0 +1,16 @@
+{
+  "name": "stellar-drips-scripts",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "scheduler": "bun run scheduler.ts"
+  },
+  "dependencies": {
+    "@stellar/stellar-sdk": "^16.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22",
+    "typescript": "^5"
+  }
+}
