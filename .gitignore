@@ -33,6 +33,9 @@ yarn-error.log*
 .soroban/identities/
 .soroban/identity/
 
+# Scheduler / Keeper registry (contains user addresses)
+scripts/subscriptions.json
+
 # Coverage
 coverage/
 lcov.info
