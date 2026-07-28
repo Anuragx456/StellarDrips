@@ -202,21 +202,14 @@ impl SubscriptionContract {
 
         // -- Emit event ----------------------------------------------------
         #[allow(deprecated)]
-        env.events().publish(
-            (EVENT_SUBSCRIPTION_CREATED, subscriber, id),
-            initial_escrow,
-        );
+        env.events()
+            .publish((EVENT_SUBSCRIPTION_CREATED, subscriber, id), initial_escrow);
 
         id
     }
 
     /// Top up the escrow balance of an existing active subscription.
-    pub fn top_up(
-        env: Env,
-        subscriber: Address,
-        id: u32,
-        amount: i128,
-    ) {
+    pub fn top_up(env: Env, subscriber: Address, id: u32, amount: i128) {
         subscriber.require_auth();
 
         if amount <= 0 {
@@ -248,7 +241,8 @@ impl SubscriptionContract {
 
         // Emit event.
         #[allow(deprecated)]
-        env.events().publish((EVENT_SUBSCRIPTION_TOP_UP, subscriber, id), amount);
+        env.events()
+            .publish((EVENT_SUBSCRIPTION_TOP_UP, subscriber, id), amount);
     }
 
     /// Execute a single payment for a due subscription.
@@ -256,11 +250,7 @@ impl SubscriptionContract {
     /// Callable by anyone (off-chain keeper).
     /// Succeeds only if the subscription is due, active, and has sufficient
     /// escrow balance.
-    pub fn execute_payment(
-        env: Env,
-        subscriber: Address,
-        id: u32,
-    ) {
+    pub fn execute_payment(env: Env, subscriber: Address, id: u32) {
         let key = DataKey::Sub(SubscriptionKey {
             subscriber: subscriber.clone(),
             id,
@@ -322,12 +312,7 @@ impl SubscriptionContract {
     ///
     /// The `subscriber` must authorise this call.
     /// `refund_recipient` receives any remaining escrow balance.
-    pub fn cancel(
-        env: Env,
-        subscriber: Address,
-        id: u32,
-        refund_recipient: Address,
-    ) {
+    pub fn cancel(env: Env, subscriber: Address, id: u32, refund_recipient: Address) {
         subscriber.require_auth();
 
         let key = DataKey::Sub(SubscriptionKey {
@@ -443,10 +428,10 @@ mod test {
             &subscriber,
             &recipient,
             &token,
-            &100_000_000,              // 100  XLM per payment
-            &86_400,                   // 24 h interval
-            &500_000_000,              // 500  XLM initial escrow
-            &(now + 86_400 * 30),      // 30 d expiration
+            &100_000_000,         // 100  XLM per payment
+            &86_400,              // 24 h interval
+            &500_000_000,         // 500  XLM initial escrow
+            &(now + 86_400 * 30), // 30 d expiration
         );
 
         assert_eq!(id, 0);
@@ -614,7 +599,7 @@ mod test {
             &token,
             &500_000_000,
             &86_400,
-            &100_000_000,  // initial_escrow < amount
+            &100_000_000, // initial_escrow < amount
             &(now + 86_400 * 30),
         );
     }
@@ -633,7 +618,7 @@ mod test {
             &100_000_000,
             &86_400,
             &500_000_000,
-            &(now - 1),  // expiration ≤ now
+            &(now - 1), // expiration ≤ now
         );
     }
 
@@ -749,8 +734,7 @@ mod test {
             id,
         });
         env.as_contract(&contract_id, || {
-            let mut sub: Subscription =
-                env.storage().instance().get(&sub_key).unwrap();
+            let mut sub: Subscription = env.storage().instance().get(&sub_key).unwrap();
             sub.status = SubscriptionStatus::Cancelled;
             env.storage().instance().set(&sub_key, &sub);
         });
@@ -781,8 +765,7 @@ mod test {
             id,
         });
         env.as_contract(&contract_id, || {
-            let mut sub: Subscription =
-                env.storage().instance().get(&sub_key).unwrap();
+            let mut sub: Subscription = env.storage().instance().get(&sub_key).unwrap();
             sub.status = SubscriptionStatus::Expired;
             env.storage().instance().set(&sub_key, &sub);
         });
@@ -846,11 +829,13 @@ mod test {
         client.execute_payment(&subscriber, &id);
 
         // Payment 2.
-        env.ledger().with_mut(|li| li.timestamp = now + 86_400 * 2 + 1);
+        env.ledger()
+            .with_mut(|li| li.timestamp = now + 86_400 * 2 + 1);
         client.execute_payment(&subscriber, &id);
 
         // Payment 3.
-        env.ledger().with_mut(|li| li.timestamp = now + 86_400 * 3 + 1);
+        env.ledger()
+            .with_mut(|li| li.timestamp = now + 86_400 * 3 + 1);
         client.execute_payment(&subscriber, &id);
 
         let sub = client.get_subscription(&subscriber, &id);
@@ -936,7 +921,8 @@ mod test {
         );
 
         // Advance past expiration.
-        env.ledger().with_mut(|li| li.timestamp = now + 86_400 * 30 + 1);
+        env.ledger()
+            .with_mut(|li| li.timestamp = now + 86_400 * 30 + 1);
 
         // execute_payment should transition to Expired and return (no panic).
         client.execute_payment(&subscriber, &id);
@@ -970,8 +956,7 @@ mod test {
             id,
         });
         env.as_contract(&contract_id, || {
-            let mut sub: Subscription =
-                env.storage().instance().get(&sub_key).unwrap();
+            let mut sub: Subscription = env.storage().instance().get(&sub_key).unwrap();
             sub.status = SubscriptionStatus::Cancelled;
             env.storage().instance().set(&sub_key, &sub);
         });
@@ -1033,13 +1018,17 @@ mod test {
         // Drain escrow via 5 payments.
         env.ledger().with_mut(|li| li.timestamp = now + 86_400 + 1);
         client.execute_payment(&subscriber, &id);
-        env.ledger().with_mut(|li| li.timestamp = now + 86_400 * 2 + 1);
+        env.ledger()
+            .with_mut(|li| li.timestamp = now + 86_400 * 2 + 1);
         client.execute_payment(&subscriber, &id);
-        env.ledger().with_mut(|li| li.timestamp = now + 86_400 * 3 + 1);
+        env.ledger()
+            .with_mut(|li| li.timestamp = now + 86_400 * 3 + 1);
         client.execute_payment(&subscriber, &id);
-        env.ledger().with_mut(|li| li.timestamp = now + 86_400 * 4 + 1);
+        env.ledger()
+            .with_mut(|li| li.timestamp = now + 86_400 * 4 + 1);
         client.execute_payment(&subscriber, &id);
-        env.ledger().with_mut(|li| li.timestamp = now + 86_400 * 5 + 1);
+        env.ledger()
+            .with_mut(|li| li.timestamp = now + 86_400 * 5 + 1);
         client.execute_payment(&subscriber, &id);
 
         // Verify escrow is drained.
@@ -1097,8 +1086,7 @@ mod test {
             id,
         });
         env.as_contract(&contract_id, || {
-            let mut sub: Subscription =
-                env.storage().instance().get(&sub_key).unwrap();
+            let mut sub: Subscription = env.storage().instance().get(&sub_key).unwrap();
             sub.status = SubscriptionStatus::Cancelled;
             env.storage().instance().set(&sub_key, &sub);
         });
@@ -1130,8 +1118,7 @@ mod test {
             id,
         });
         env.as_contract(&contract_id, || {
-            let mut sub: Subscription =
-                env.storage().instance().get(&sub_key).unwrap();
+            let mut sub: Subscription = env.storage().instance().get(&sub_key).unwrap();
             sub.status = SubscriptionStatus::Expired;
             env.storage().instance().set(&sub_key, &sub);
         });
