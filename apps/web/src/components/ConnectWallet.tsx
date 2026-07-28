@@ -14,7 +14,7 @@ export function ConnectWallet() {
     disconnect,
   } = useWallet();
 
-  // ---- Not available (no Freighter extension) --------------------------------
+  // ---- Not available (no wallet extension detected) --------------------------
   if (!isAvailable) {
     return (
       <div className="rounded-full border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950 px-6 py-3 text-sm font-medium text-amber-700 dark:text-amber-300">
@@ -26,6 +26,9 @@ export function ConnectWallet() {
         >
           Install Freighter
         </a>
+        <span className="ml-1.5 text-amber-600 dark:text-amber-400">
+          · xBull · Albedo · Rabet · Lobstr · Hana · Klever
+        </span>
       </div>
     );
   }

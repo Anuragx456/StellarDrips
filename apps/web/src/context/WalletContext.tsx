@@ -15,6 +15,14 @@ import {
   KitEventType,
 } from "@creit.tech/stellar-wallets-kit";
 import { FreighterModule } from "@creit.tech/stellar-wallets-kit/modules/freighter";
+import { AlbedoModule } from "@creit.tech/stellar-wallets-kit/modules/albedo";
+import { xBullModule } from "@creit.tech/stellar-wallets-kit/modules/xbull";
+import { RabetModule } from "@creit.tech/stellar-wallets-kit/modules/rabet";
+import { LobstrModule } from "@creit.tech/stellar-wallets-kit/modules/lobstr";
+import { HanaModule } from "@creit.tech/stellar-wallets-kit/modules/hana";
+import { HotWalletModule } from "@creit.tech/stellar-wallets-kit/modules/hotwallet";
+import { KleverModule } from "@creit.tech/stellar-wallets-kit/modules/klever";
+import { WalletConnectModule, WalletConnectTargetChain } from "@creit.tech/stellar-wallets-kit/modules/wallet-connect";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -78,17 +86,43 @@ export function WalletProvider({ children }: { children: ReactNode }) {
 
     const kit = StellarWalletsKit;
 
+    const walletModules = [
+      new FreighterModule(),
+      new AlbedoModule(),
+      new xBullModule(),
+      new RabetModule(),
+      new LobstrModule(),
+      new HanaModule(),
+      new HotWalletModule(),
+      new KleverModule(),
+    ];
+
+    // WalletConnect requires a projectId from https://cloud.walletconnect.com
+    if (typeof process !== "undefined" && process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID) {
+      walletModules.push(
+        new WalletConnectModule({
+          projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID,
+          metadata: {
+            name: "Stellar Drips",
+            description: "Recurring payments on the Stellar network",
+            url: typeof window !== "undefined" ? window.location.origin : "https://stellardrips.app",
+            icons: [],
+          },
+          allowedChains: [WalletConnectTargetChain.TESTNET],
+        }),
+      );
+    }
+
     kit.init({
-      modules: [new FreighterModule()],
+      modules: walletModules,
       network: Networks.TESTNET,
     });
 
-    // Check availability
+    // Check availability — at least one wallet is available
     kit.refreshSupportedWallets().then((wallets) => {
-      const freighter = wallets.find((w) => w.id === "freighter");
       setState((prev) => ({
         ...prev,
-        isAvailable: freighter?.isAvailable ?? false,
+        isAvailable: wallets.some((w) => w.isAvailable),
       }));
     });
 
