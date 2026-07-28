@@ -15,21 +15,21 @@ describe("TransactionStatus", () => {
 
   it("shows success with explorer link", () => {
     render(<TransactionStatus status="success" txHash="abc123" />);
-    expect(screen.getByText("✅ Transaction confirmed")).toBeDefined();
-    const link = screen.getByText("View on Stellar.Expert →");
-    expect(link.getAttribute("href")).toContain("abc123");
+    expect(screen.getByText("Confirmed")).toBeDefined();
+    const link = screen.getByText("View →");
+    expect(link.closest("a")?.getAttribute("href")).toContain("abc123");
   });
 
   it("shows error with retry button", () => {
     const onRetry = () => {};
     render(<TransactionStatus status="error" error="Something failed" onRetry={onRetry} />);
-    expect(screen.getByText("⚠ Something failed")).toBeDefined();
+    expect(screen.getByText("Something failed")).toBeDefined();
     expect(screen.getByText("Try again")).toBeDefined();
   });
 
   it("shows error without retry when onRetry not provided", () => {
     render(<TransactionStatus status="error" error="Failed" />);
-    expect(screen.getByText("⚠ Failed")).toBeDefined();
+    expect(screen.getByText("Failed")).toBeDefined();
     expect(screen.queryByText("Try again")).toBeNull();
   });
 });

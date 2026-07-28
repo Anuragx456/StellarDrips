@@ -1,6 +1,6 @@
 "use client";
 
-import { RefreshCw, ExternalLink } from "lucide-react";
+import { RefreshCw, ExternalLink, PlusCircle, CircleOff, MinusCircle, ArrowUpCircle, Coins, AlertCircle } from "lucide-react";
 import { useEvents } from "@/hooks/useEvents";
 import { EVENT_LABELS, EXPLORER_BASE } from "@/lib/types";
 import { DarkCard } from "@/components/primitives/DarkCard";
@@ -9,14 +9,15 @@ import { TxStatusPill } from "@/components/primitives/TxStatusPill";
 import { LoadingSkeleton } from "@/components/primitives/LoadingSkeleton";
 import { EmptyState } from "@/components/primitives/EmptyState";
 import { GlowButton } from "@/components/primitives/GlowButton";
+import type { ReactNode } from "react";
 
-const EVENT_ICONS: Record<string, string> = {
-  sub_crt: "🟢",
-  sub_cnc: "🔴",
-  sub_exp: "⚪",
-  sub_top: "🔵",
-  pay_exe: "🪙",
-  pay_fal: "⛔",
+const EVENT_ICONS: Record<string, ReactNode> = {
+  sub_crt: <PlusCircle className="h-4 w-4 text-[var(--success)]" />,
+  sub_cnc: <CircleOff className="h-4 w-4 text-[var(--danger)]" />,
+  sub_exp: <MinusCircle className="h-4 w-4 text-[var(--faint)]" />,
+  sub_top: <ArrowUpCircle className="h-4 w-4 text-[var(--accent)]" />,
+  pay_exe: <Coins className="h-4 w-4 text-[var(--success)]" />,
+  pay_fal: <AlertCircle className="h-4 w-4 text-[var(--danger)]" />,
 };
 
 const EVENT_STATUS: Record<string, "success" | "pending" | "failed"> = {
@@ -104,7 +105,7 @@ export function EventDashboard() {
         <div className="flex flex-col gap-2">
           {events.map((evt, idx) => (
             <DarkCard key={idx} hover={false} className="flex items-center gap-3 px-4 py-3">
-              <span className="text-lg">{EVENT_ICONS[evt.type] ?? "📄"}</span>
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[var(--surface-3)]">{EVENT_ICONS[evt.type] ?? <AlertCircle className="h-4 w-4 text-[var(--faint)]" />}</span>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <p className="text-sm text-[var(--text)] truncate">

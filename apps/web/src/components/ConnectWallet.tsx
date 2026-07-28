@@ -4,7 +4,7 @@ import { useWallet } from "@/context/WalletContext";
 import { GlowButton } from "@/components/primitives/GlowButton";
 import { NetworkBadge } from "@/components/primitives/NetworkBadge";
 import { MonoValue } from "@/components/primitives/MonoValue";
-import { LogOut } from "lucide-react";
+import { LogOut, Wallet } from "lucide-react";
 
 export function ConnectWallet() {
   const {
@@ -21,7 +21,7 @@ export function ConnectWallet() {
   if (!isAvailable) {
     return (
       <div className="inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--surface-2)] px-4 py-2 text-xs text-[var(--muted)]">
-        <span className="h-1.5 w-1.5 rounded-full bg-[var(--warn)]" />
+        <Wallet className="h-3.5 w-3.5 text-[var(--warn)]" />
         No wallet detected —
         <a
           href="https://freighter.app"

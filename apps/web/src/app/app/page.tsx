@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { motion } from "framer-motion";
 import { WalletProvider } from "@/context/WalletContext";
 import { useWallet } from "@/context/WalletContext";
 import { useBalance } from "@/hooks/useBalance";
@@ -42,13 +43,13 @@ function DappContent() {
           <div className="flex items-center gap-3">
             {isConnected && isTestnet && <NetworkBadge />}
             {isConnected && address && (
-              <div className="hidden items-center gap-2 text-xs text-[var(--faint)] sm:flex">
+              <div className="flex items-center gap-2 text-xs text-[var(--faint)]">
                 {isLoading ? (
-                  <span className="animate-pulse">Loading…</span>
+                  <span className="inline-block h-3 w-20 animate-pulse rounded-full bg-[var(--surface-3)]" />
                 ) : error ? (
-                  <span className="text-[var(--danger)]">{error}</span>
+                  <span className="hidden text-[var(--danger)] sm:inline">{error}</span>
                 ) : formatted ? (
-                  <span className="font-mono text-[var(--muted)]">{formatted} XLM</span>
+                  <span className="hidden font-mono text-[var(--muted)] sm:inline">{formatted} XLM</span>
                 ) : null}
               </div>
             )}
@@ -83,7 +84,12 @@ function DappContent() {
 
         {/* Disconnected */}
         {!isConnected && (
-          <section className="flex flex-col items-center gap-6 text-center w-full max-w-lg py-16">
+          <motion.section
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+            className="flex flex-col items-center gap-6 text-center w-full max-w-lg py-16"
+          >
             <h2 className="font-[family-name:var(--font-display)] text-[clamp(1.6rem,3vw,2.2rem)] font-semibold leading-[1.05] text-[var(--text)]">
               Automated recurring payments on <span className="text-[var(--accent-bright)]">Stellar</span>
             </h2>
@@ -91,7 +97,7 @@ function DappContent() {
               Create subscription-based payments powered by Soroban smart contracts.
               Connect your wallet to get started.
             </p>
-          </section>
+          </motion.section>
         )}
 
         {/* Forms */}

@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import { useSubscribe } from "@/hooks/useSubscribe";
+import { ChevronDown } from "lucide-react";
 import { SurfaceInput } from "@/components/primitives/SurfaceInput";
 import { GlowButton } from "@/components/primitives/GlowButton";
 import { DarkCard } from "@/components/primitives/DarkCard";
@@ -97,19 +98,22 @@ export function SubscribeForm() {
             <label htmlFor="interval" className="text-xs font-medium uppercase tracking-[0.08em] text-[var(--faint)]">
               Payment Interval
             </label>
-            <select
-              id="interval"
-              value={intervalSeconds}
-              onChange={(e) => setIntervalSeconds(Number(e.target.value))}
-              disabled={isPending}
-              className="w-full rounded-[var(--r-input)] border border-[var(--border)] bg-[var(--surface-2)] px-4 py-3 text-sm text-[var(--text)] transition-colors focus:outline-none focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent)] disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              {INTERVAL_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
+            <div className="relative">
+              <select
+                id="interval"
+                value={intervalSeconds}
+                onChange={(e) => setIntervalSeconds(Number(e.target.value))}
+                disabled={isPending}
+                className="w-full appearance-none rounded-[var(--r-input)] border border-[var(--border)] bg-[var(--surface-2)] px-4 py-3 pr-10 text-sm text-[var(--text)] transition-colors focus:outline-none focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent)] disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                {INTERVAL_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--faint)]" />
+            </div>
           </div>
 
           <SurfaceInput
