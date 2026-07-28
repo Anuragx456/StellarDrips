@@ -7,6 +7,7 @@ export enum SubscriptionStatus {
 
 /** Core subscription data — matches contract Subscription struct fields. */
 export interface Subscription {
+  id: number;
   subscriber: string;
   recipient: string;
   token: string;

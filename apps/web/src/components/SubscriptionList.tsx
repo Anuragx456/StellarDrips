@@ -3,10 +3,11 @@
 import { useWallet } from "@/context/WalletContext";
 import { useSubscription } from "@/hooks/useSubscription";
 import { SubscriptionCard } from "./SubscriptionCard";
+import type { Subscription } from "@/lib/types";
 
 interface SubscriptionListProps {
-  onTopUp: (sub: any) => void;
-  onCancel: (sub: any) => void;
+  onTopUp: (sub: Subscription) => void;
+  onCancel: (sub: Subscription) => void;
 }
 
 export function SubscriptionList({ onTopUp, onCancel }: SubscriptionListProps) {

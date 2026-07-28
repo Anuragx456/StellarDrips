@@ -4,6 +4,7 @@ import { SubscriptionCard } from "@/components/SubscriptionCard";
 import { SubscriptionStatus } from "@/lib/types";
 
 const baseSub = {
+  id: 0,
   subscriber: "GA3V6QO4BM6K6G4S5YNMZ5XK5XK5XK5XK5XK5XK5XK5XK5XK5XK5XK5X",
   recipient: "GB4W7R5CN7H7J5T6ZNZ6Y6L6Y6L6Y6L6Y6L6Y6L6Y6L6Y6L6Y6L6Y6L6Y",
   token: "GA3V6QO4BM6K6G4S5YNMZ5XK5XK5XK5XK5XK5XK5XK5XK5XK5XK5XK5X",

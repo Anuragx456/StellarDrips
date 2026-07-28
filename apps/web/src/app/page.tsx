@@ -9,14 +9,15 @@ import { SubscriptionList } from "@/components/SubscriptionList";
 import { EventDashboard } from "@/components/EventDashboard";
 import { TopUpDialog } from "@/components/TopUpDialog";
 import { CancelDialog } from "@/components/CancelDialog";
+import type { Subscription } from "@/lib/types";
 
 export default function Home() {
   const { address, isConnected, isTestnet } = useWallet();
   const { balance, isLoading, error } = useBalance();
 
   // Dialog state
-  const [topUpTarget, setTopUpTarget] = useState<any>(null);
-  const [cancelTarget, setCancelTarget] = useState<any>(null);
+  const [topUpTarget, setTopUpTarget] = useState<Subscription | null>(null);
+  const [cancelTarget, setCancelTarget] = useState<Subscription | null>(null);
 
   const formatted = balance
     ? Number(balance).toLocaleString(undefined, {

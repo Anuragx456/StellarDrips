@@ -44,7 +44,7 @@ export function useEvents(): UseEventsReturn {
         const eventResult = await server.getEvents({
           startLedger: 0,
           filters: [{
-            type: "contract" as any,
+            type: "contract" as unknown as "system",
             contractIds: [contractId],
           }],
           limit: 50,

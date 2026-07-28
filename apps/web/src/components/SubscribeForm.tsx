@@ -186,7 +186,7 @@ export function SubscribeForm() {
         status={txStatus}
         txHash={status.type === "success" ? status.txHash : undefined}
         error={status.type === "error" ? status.error : undefined}
-        onRetry={() => { handleSubmit as any; }}
+        onRetry={() => { handleSubmit(new Event("submit", { cancelable: true }) as unknown as React.FormEvent<HTMLFormElement>); }}
       />
     </div>
   );

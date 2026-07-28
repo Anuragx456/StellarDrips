@@ -30,6 +30,9 @@ export function useSubscription(id?: number): UseSubscriptionReturn {
 
   useEffect(() => {
     if (!isConnected || !address) {
+      // Reset state when wallet disconnects — safe because this guard only
+      // activates on the transition, not every render.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setData(null);
       setLoading(false);
       setError(null);
@@ -56,8 +59,12 @@ export function useSubscription(id?: number): UseSubscriptionReturn {
           .build();
 
         const countSim = await server.simulateTransaction(countTx);
+        // simulateTransaction response types don't expose nested result.retval directly
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const countResult = (countSim as any)?.result?.retval
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           ? (countSim as any).result
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           : (countSim as any)?.results?.[0];
 
         const rawCount = countResult?.retval ?? null;
@@ -84,14 +91,18 @@ export function useSubscription(id?: number): UseSubscriptionReturn {
             .build();
 
           const subSim = await server.simulateTransaction(subTx);
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const subResult = (subSim as any)?.result?.retval
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             ? (subSim as any).result
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             : (subSim as any)?.results?.[0];
 
           if (subResult?.retval && !cancelled) {
             const raw = scValToNative(subResult.retval);
             const parsed = parseSubscription(raw);
             subs.push({
+              id: subId,
               subscriber: parsed.subscriber,
               recipient: parsed.recipient,
               token: parsed.token,
