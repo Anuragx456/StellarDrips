@@ -1,8 +1,13 @@
 "use client";
 
+import { RefreshCw } from "lucide-react";
 import { useWallet } from "@/context/WalletContext";
 import { useSubscription } from "@/hooks/useSubscription";
 import { SubscriptionCard } from "./SubscriptionCard";
+import { LoadingSkeleton, SkeletonBlock } from "@/components/primitives/LoadingSkeleton";
+import { EmptyState } from "@/components/primitives/EmptyState";
+import { DarkCard } from "@/components/primitives/DarkCard";
+import { GlowButton } from "@/components/primitives/GlowButton";
 import type { Subscription } from "@/lib/types";
 
 interface SubscriptionListProps {
@@ -16,71 +21,78 @@ export function SubscriptionList({ onTopUp, onCancel }: SubscriptionListProps) {
 
   if (!isConnected) return null;
 
+  // Loading
   if (loading) {
     return (
-      <div className="w-full max-w-3xl flex flex-col gap-4">
-        <h2 className="text-xl font-semibold text-black dark:text-zinc-50">Your Subscriptions</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="w-full max-w-3xl">
+        <div className="mb-4 flex items-center gap-2">
+          <h2 className="font-[family-name:var(--font-display)] text-[1.25rem] font-semibold text-[var(--text)]">
+            Your <span className="text-[var(--accent-bright)]">Subscriptions</span>
+          </h2>
+          <LoadingSkeleton variant="line" className="w-20" />
+        </div>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5 animate-pulse">
-              <div className="h-4 bg-zinc-200 dark:bg-zinc-700 rounded w-20 mb-4" />
-              <div className="h-3 bg-zinc-200 dark:bg-zinc-700 rounded w-32 mb-2" />
-              <div className="h-3 bg-zinc-200 dark:bg-zinc-700 rounded w-24 mb-4" />
-              <div className="h-2 bg-zinc-200 dark:bg-zinc-700 rounded w-full mb-3" />
-              <div className="h-8 bg-zinc-200 dark:bg-zinc-700 rounded w-full" />
-            </div>
+            <DarkCard key={i} hover={false} className="p-5">
+              <SkeletonBlock lines={4} />
+            </DarkCard>
           ))}
         </div>
       </div>
     );
   }
 
+  // Error
   if (error) {
     return (
       <div className="w-full max-w-3xl">
-        <h2 className="text-xl font-semibold text-black dark:text-zinc-50 mb-4">Your Subscriptions</h2>
-        <div className="rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950 p-5 text-center">
-          <p className="text-sm text-red-600 dark:text-red-400 mb-3">⚠ {error}</p>
-          <button
-            onClick={refresh}
-            className="rounded-lg bg-[var(--danger-text)] px-4 py-2 text-xs font-medium text-white hover:bg-[var(--danger-hover)] transition-colors cursor-pointer"
-          >
+        <h2 className="mb-4 font-[family-name:var(--font-display)] text-[1.25rem] font-semibold text-[var(--text)]">
+          Your <span className="text-[var(--accent-bright)]">Subscriptions</span>
+        </h2>
+        <DarkCard hover={false} className="p-6 text-center">
+          <p className="mb-3 text-sm text-[var(--danger)]">{error}</p>
+          <GlowButton variant="ghost" onClick={refresh}>
             Try Again
-          </button>
-        </div>
+          </GlowButton>
+        </DarkCard>
       </div>
     );
   }
 
+  // Empty
   if (!subs || subs.length === 0) {
     return (
       <div className="w-full max-w-3xl">
-        <h2 className="text-xl font-semibold text-black dark:text-zinc-50 mb-4">Your Subscriptions</h2>
-        <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 p-10 text-center">
-          <p className="text-zinc-500 dark:text-zinc-400 mb-2">No subscriptions yet</p>
-          <p className="text-sm text-zinc-400 dark:text-zinc-500">
-            Create your first subscription using the form above.
-          </p>
-        </div>
+        <h2 className="mb-4 font-[family-name:var(--font-display)] text-[1.25rem] font-semibold text-[var(--text)]">
+          Your <span className="text-[var(--accent-bright)]">Subscriptions</span>
+        </h2>
+        <EmptyState
+          title="No subscriptions yet"
+          description="Create your first subscription using the form above."
+        />
       </div>
     );
   }
 
+  // List
   return (
     <div className="w-full max-w-3xl">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-semibold text-black dark:text-zinc-50">Your Subscriptions</h2>
+      <div className="mb-4 flex items-center justify-between">
+        <h2 className="font-[family-name:var(--font-display)] text-[1.25rem] font-semibold text-[var(--text)]">
+          Your <span className="text-[var(--accent-bright)]">Subscriptions</span>
+        </h2>
         <button
           onClick={refresh}
-          className="text-xs text-[var(--brand)] dark:text-[var(--brand)] hover:underline cursor-pointer"
+          className="inline-flex items-center gap-1 text-xs text-[var(--accent)] transition-colors hover:text-[var(--accent-bright)]"
         >
+          <RefreshCw className="h-3 w-3" />
           Refresh
         </button>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
         {subs.map((sub, idx) => (
           <SubscriptionCard
-            key={idx}
+            key={sub.id ?? idx}
             sub={sub}
             onTopUp={() => onTopUp(sub)}
             onCancel={() => onCancel(sub)}

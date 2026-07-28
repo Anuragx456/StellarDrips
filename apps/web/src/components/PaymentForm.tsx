@@ -2,111 +2,51 @@
 
 import { useState, type FormEvent } from "react";
 import { usePayment, type TransactionRecord } from "@/hooks/usePayment";
+import { SurfaceInput } from "@/components/primitives/SurfaceInput";
+import { GlowButton } from "@/components/primitives/GlowButton";
+import { DarkCard } from "@/components/primitives/DarkCard";
+import { MonoValue } from "@/components/primitives/MonoValue";
+import { TxStatusPill } from "@/components/primitives/TxStatusPill";
+import { TransactionStatus } from "@/components/TransactionStatus";
+import { ArrowUpRight } from "lucide-react";
 
 // ---------------------------------------------------------------------------
 // RecentTransactions
 // ---------------------------------------------------------------------------
 
-function RecentTransactions({
-  txs,
-}: {
-  txs: TransactionRecord[];
-}) {
+function RecentTransactions({ txs }: { txs: TransactionRecord[] }) {
   if (txs.length === 0) return null;
 
   return (
-    <div className="w-full max-w-md mt-8">
-      <h3 className="text-sm font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-3">
+    <div className="w-full max-w-md">
+      <h3 className="mb-3 text-xs font-medium uppercase tracking-[0.08em] text-[var(--faint)]">
         Recent Transactions
       </h3>
-      <div className="divide-y divide-zinc-200 dark:divide-zinc-800 border border-zinc-200 dark:border-zinc-800 rounded-lg overflow-hidden">
+      <div className="flex flex-col gap-2">
         {txs.map((tx) => (
-          <div
-            key={tx.txHash}
-            className="flex items-center justify-between px-4 py-3 text-sm"
-          >
+          <DarkCard key={tx.txHash} hover={false} className="flex items-center justify-between px-4 py-3">
             <div className="flex flex-col gap-0.5 min-w-0">
-              <span className="font-mono text-xs text-zinc-500 dark:text-zinc-400 truncate">
-                {tx.destination}
-              </span>
-              <span className="font-medium text-zinc-800 dark:text-zinc-200">
+              <MonoValue value={tx.destination} truncate />
+              <span className="text-xs font-medium text-[var(--text)]">
                 {tx.amount} XLM
               </span>
             </div>
             <div className="flex items-center gap-2 shrink-0">
-              <span
-                className={`size-1.5 rounded-full ${
-                  tx.success ? "bg-emerald-500" : "bg-red-500"
-                }`}
-              />
+              <TxStatusPill status={tx.success ? "success" : "failed"} />
               <a
                 href={`https://stellar.expert/explorer/testnet/tx/${tx.txHash}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="font-mono text-xs text-blue-600 dark:text-blue-400 underline-offset-2 hover:underline"
+                className="flex items-center gap-0.5 text-[10px] text-[var(--accent)] hover:underline"
               >
-                {tx.txHash.slice(0, 8)}…
+                <ArrowUpRight className="h-3 w-3" />
               </a>
             </div>
-          </div>
+          </DarkCard>
         ))}
       </div>
     </div>
   );
-}
-
-// ---------------------------------------------------------------------------
-// StatusBadge
-// ---------------------------------------------------------------------------
-
-function StatusBadge({ status }: { status: ReturnType<typeof usePayment>["status"] }) {
-  switch (status.type) {
-    case "idle":
-      return null;
-    case "building":
-      return (
-        <div className="flex items-center gap-2 text-sm text-zinc-500 dark:text-zinc-400">
-          <span className="size-3 rounded-full border-2 border-zinc-400 border-t-transparent animate-spin" />
-          Building transaction…
-        </div>
-      );
-    case "signing":
-      return (
-        <div className="flex items-center gap-2 text-sm text-zinc-500 dark:text-zinc-400">
-          <span className="size-3 rounded-full border-2 border-zinc-400 border-t-transparent animate-spin" />
-          Sign in your wallet…
-        </div>
-      );
-    case "submitting":
-      return (
-        <div className="flex items-center gap-2 text-sm text-zinc-500 dark:text-zinc-400">
-          <span className="size-3 rounded-full border-2 border-zinc-400 border-t-transparent animate-spin" />
-          Submitting to network…
-        </div>
-      );
-    case "success":
-      return (
-        <div className="flex flex-col items-center gap-1">
-          <span className="text-sm font-medium text-emerald-600 dark:text-emerald-400">
-            ✅ Transaction successful
-          </span>
-          <a
-            href={`https://stellar.expert/explorer/testnet/tx/${status.txHash}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-xs font-mono text-blue-600 dark:text-blue-400 underline-offset-2 hover:underline"
-          >
-            View on Stellar.Expert →
-          </a>
-        </div>
-      );
-    case "error":
-      return (
-        <div className="text-sm text-red-600 dark:text-red-400 text-center">
-          ⚠ {status.error}
-        </div>
-      );
-  }
 }
 
 // ---------------------------------------------------------------------------
@@ -138,80 +78,69 @@ export function PaymentForm() {
 
   return (
     <div className="flex flex-col items-center gap-6 w-full max-w-md">
-      <h2 className="text-xl font-semibold text-black dark:text-zinc-50">
-        Send XLM
+      <h2 className="font-[family-name:var(--font-display)] text-[1.25rem] font-semibold text-[var(--text)]">
+        Send <span className="text-[var(--accent-bright)]">XLM</span>
       </h2>
 
-      <form
-        onSubmit={handleSubmit}
-        className="w-full flex flex-col gap-4"
-      >
-        {/* Recipient */}
-        <div className="flex flex-col gap-1.5">
-          <label
-            htmlFor="destination"
-            className="text-sm font-medium text-zinc-600 dark:text-zinc-400"
-          >
-            Recipient Address
-          </label>
-          <input
-            id="destination"
-            type="text"
+      <DarkCard hover={false} className="w-full p-6">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <SurfaceInput
+            label="Recipient Address"
             placeholder="G…"
             value={destination}
             onChange={(e) => setDestination(e.target.value)}
             disabled={isPending}
-            className="w-full rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-4 py-2.5 text-sm font-mono text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-[var(--brand)]/50 disabled:opacity-50 disabled:cursor-not-allowed"
+            mono
           />
-        </div>
 
-        {/* Amount */}
-        <div className="flex flex-col gap-1.5">
-          <label
-            htmlFor="amount"
-            className="text-sm font-medium text-zinc-600 dark:text-zinc-400"
-          >
-            Amount (XLM)
-          </label>
-          <input
-            id="amount"
-            type="text"
-            inputMode="decimal"
+          <SurfaceInput
+            label="Amount (XLM)"
             placeholder="0.0"
+            inputMode="decimal"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
             disabled={isPending}
-            className="w-full rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-4 py-2.5 text-sm text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-[var(--brand)]/50 disabled:opacity-50 disabled:cursor-not-allowed"
+            hint="Enter the amount of XLM to send"
           />
-        </div>
 
-        {/* Actions */}
-        <div className="flex gap-3">
-          <button
-            type="submit"
-            disabled={isPending || !destination.trim() || !amount.trim()}
-            className="flex-1 rounded-lg bg-[var(--brand)] px-4 py-2.5 text-sm font-medium text-white hover:bg-[var(--brand-hover)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-          >
-            {isPending ? "Sending…" : "Send XLM"}
-          </button>
-
-          {status.type !== "idle" && (
-            <button
-              type="button"
-              onClick={handleReset}
-              disabled={isPending}
-              className="rounded-lg border border-zinc-300 dark:border-zinc-700 px-4 py-2.5 text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+          <div className="flex gap-3 pt-1">
+            <GlowButton
+              type="submit"
+              variant="primary"
+              disabled={isPending || !destination.trim() || !amount.trim()}
+              className="flex-1"
             >
-              Clear
-            </button>
-          )}
-        </div>
-      </form>
+              {isPending ? "Sending…" : "Send XLM"}
+            </GlowButton>
 
-      {/* Status */}
-      <StatusBadge status={status} />
+            {status.type !== "idle" && (
+              <GlowButton
+                type="button"
+                variant="ghost"
+                onClick={handleReset}
+                disabled={isPending}
+              >
+                Clear
+              </GlowButton>
+            )}
+          </div>
+        </form>
+      </DarkCard>
 
-      {/* Recent transactions */}
+      <TransactionStatus
+        status={
+          status.type === "building" || status.type === "signing" || status.type === "submitting"
+            ? "pending"
+            : status.type === "success"
+              ? "success"
+              : status.type === "error"
+                ? "error"
+                : "idle"
+        }
+        txHash={status.type === "success" ? status.txHash : undefined}
+        error={status.type === "error" ? status.error : undefined}
+      />
+
       <RecentTransactions txs={recentTransactions} />
     </div>
   );

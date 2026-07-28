@@ -1,7 +1,14 @@
 "use client";
 
+import { RefreshCw, ExternalLink } from "lucide-react";
 import { useEvents } from "@/hooks/useEvents";
 import { EVENT_LABELS, EXPLORER_BASE } from "@/lib/types";
+import { DarkCard } from "@/components/primitives/DarkCard";
+import { MonoValue } from "@/components/primitives/MonoValue";
+import { TxStatusPill } from "@/components/primitives/TxStatusPill";
+import { LoadingSkeleton } from "@/components/primitives/LoadingSkeleton";
+import { EmptyState } from "@/components/primitives/EmptyState";
+import { GlowButton } from "@/components/primitives/GlowButton";
 
 const EVENT_ICONS: Record<string, string> = {
   sub_crt: "🟢",
@@ -10,6 +17,15 @@ const EVENT_ICONS: Record<string, string> = {
   sub_top: "🔵",
   pay_exe: "🪙",
   pay_fal: "⛔",
+};
+
+const EVENT_STATUS: Record<string, "success" | "pending" | "failed"> = {
+  sub_crt: "success",
+  sub_cnc: "pending",
+  sub_exp: "pending",
+  sub_top: "success",
+  pay_exe: "success",
+  pay_fal: "failed",
 };
 
 function timeAgo(ts: number): string {
@@ -25,65 +41,84 @@ export function EventDashboard() {
 
   return (
     <div className="w-full max-w-3xl">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-semibold text-black dark:text-zinc-50">Event Dashboard</h2>
-        <button
-          onClick={refresh}
-          className="text-xs text-[var(--brand)] dark:text-[var(--brand)] hover:underline cursor-pointer"
-        >
-          Refresh
-        </button>
+      <div className="mb-4 flex items-center justify-between">
+        <h2 className="font-[family-name:var(--font-display)] text-[1.25rem] font-semibold text-[var(--text)]">
+          Event <span className="text-[var(--accent-bright)]">Dashboard</span>
+        </h2>
+        <div className="flex items-center gap-3">
+          {/* Live pulse */}
+          {!loading && !error && events.length > 0 && (
+            <span className="inline-flex items-center gap-1.5 text-[10px] text-[var(--success)]">
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[var(--success)] opacity-75" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-[var(--success)]" />
+              </span>
+              Live
+            </span>
+          )}
+          <button
+            onClick={refresh}
+            className="inline-flex items-center gap-1 text-xs text-[var(--accent)] transition-colors hover:text-[var(--accent-bright)]"
+          >
+            <RefreshCw className="h-3 w-3" />
+            Refresh
+          </button>
+        </div>
       </div>
 
+      {/* Loading */}
       {loading && (
-        <div className="space-y-3">
-          {[1, 2, 3, 4, 5].map((i) => (
-            <div key={i} className="flex items-center gap-3 animate-pulse">
-              <div className="size-8 rounded-full bg-zinc-200 dark:bg-zinc-700" />
-              <div className="flex-1 space-y-1.5">
-                <div className="h-3 bg-zinc-200 dark:bg-zinc-700 rounded w-3/4" />
-                <div className="h-2 bg-zinc-200 dark:bg-zinc-700 rounded w-1/2" />
+        <div className="flex flex-col gap-3">
+          {[1, 2, 3, 4].map((i) => (
+            <DarkCard key={i} hover={false} className="flex items-center gap-3 px-4 py-3">
+              <LoadingSkeleton variant="circle" className="shrink-0" />
+              <div className="flex-1 space-y-2">
+                <LoadingSkeleton variant="text" className="w-3/4" />
+                <LoadingSkeleton variant="text" className="w-1/2 h-3" />
               </div>
-            </div>
+            </DarkCard>
           ))}
         </div>
       )}
 
+      {/* Error */}
       {error && !loading && (
-        <div className="rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950 p-5 text-center">
-          <p className="text-sm text-red-600 dark:text-red-400 mb-3">⚠ {error}</p>
-          <button
-            onClick={refresh}
-            className="rounded-lg bg-[var(--danger-text)] px-4 py-2 text-xs font-medium text-white hover:bg-[var(--danger-hover)] transition-colors cursor-pointer"
-          >
+        <DarkCard hover={false} className="p-6 text-center">
+          <p className="mb-3 text-sm text-[var(--danger)]">{error}</p>
+          <GlowButton variant="ghost" onClick={refresh}>
             Try Again
-          </button>
-        </div>
+          </GlowButton>
+        </DarkCard>
       )}
 
+      {/* Empty */}
       {!loading && !error && events.length === 0 && (
-        <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 p-10 text-center">
-          <p className="text-zinc-500 dark:text-zinc-400 mb-2">No events yet</p>
-          <p className="text-sm text-zinc-400 dark:text-zinc-500">
-            Create a subscription to get started.
-          </p>
-        </div>
+        <EmptyState
+          title="No events yet"
+          description="Create a subscription to see events here."
+        />
       )}
 
+      {/* Events list */}
       {!loading && !error && events.length > 0 && (
-        <div className="space-y-2">
+        <div className="flex flex-col gap-2">
           {events.map((evt, idx) => (
-            <div
-              key={idx}
-              className="flex items-center gap-3 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-4 py-3"
-            >
+            <DarkCard key={idx} hover={false} className="flex items-center gap-3 px-4 py-3">
               <span className="text-lg">{EVENT_ICONS[evt.type] ?? "📄"}</span>
               <div className="flex-1 min-w-0">
-                <p className="text-sm text-zinc-800 dark:text-zinc-200 truncate">
-                  {EVENT_LABELS[evt.type as keyof typeof EVENT_LABELS] ?? evt.type}
-                </p>
-                <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                  {evt.subscriber.slice(0, 8)}… #{evt.id} — {timeAgo(evt.timestamp)}
+                <div className="flex items-center gap-2">
+                  <p className="text-sm text-[var(--text)] truncate">
+                    {EVENT_LABELS[evt.type as keyof typeof EVENT_LABELS] ?? evt.type}
+                  </p>
+                  <TxStatusPill
+                    status={EVENT_STATUS[evt.type] ?? "pending"}
+                    className="shrink-0"
+                  />
+                </div>
+                <p className="mt-0.5 flex items-center gap-2 text-xs text-[var(--faint)]">
+                  <MonoValue value={`${evt.subscriber.slice(0, 6)}… #${evt.id}`} />
+                  <span>·</span>
+                  <span>{timeAgo(evt.timestamp)}</span>
                 </p>
               </div>
               {evt.txHash && (
@@ -91,12 +126,13 @@ export function EventDashboard() {
                   href={`${EXPLORER_BASE}/tx/${evt.txHash}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-xs text-[var(--brand)] dark:text-[var(--brand)] underline-offset-2 hover:underline shrink-0"
+                  className="flex shrink-0 items-center gap-1 text-[10px] text-[var(--accent)] transition-colors hover:text-[var(--accent-bright)]"
                 >
+                  <ExternalLink className="h-3 w-3" />
                   Tx
                 </a>
               )}
-            </div>
+            </DarkCard>
           ))}
         </div>
       )}

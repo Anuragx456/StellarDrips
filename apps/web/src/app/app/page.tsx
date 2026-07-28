@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
+import Image from "next/image";
 import { WalletProvider } from "@/context/WalletContext";
 import { useWallet } from "@/context/WalletContext";
 import { useBalance } from "@/hooks/useBalance";
@@ -10,6 +12,8 @@ import { SubscriptionList } from "@/components/SubscriptionList";
 import { EventDashboard } from "@/components/EventDashboard";
 import { TopUpDialog } from "@/components/TopUpDialog";
 import { CancelDialog } from "@/components/CancelDialog";
+import { NetworkBadge } from "@/components/primitives/NetworkBadge";
+import { ConnectWallet } from "@/components/ConnectWallet";
 import type { Subscription } from "@/lib/types";
 
 function DappContent() {
@@ -27,46 +31,61 @@ function DappContent() {
     : null;
 
   return (
-    <div className="flex flex-col flex-1 items-center pt-20">
-      <main className="flex flex-1 w-full max-w-4xl flex-col items-center py-10 px-6 gap-12">
-        {/* Wallet status */}
-        {isConnected && address && (
-          <header className="flex flex-col items-center gap-3 text-center w-full max-w-lg">
-            <div className="flex flex-col items-center gap-2">
-              <code className="text-xs font-mono text-[var(--faint)] bg-[var(--surface)] border border-[var(--border)] px-3 py-1.5 rounded-[var(--r-tile)] break-all max-w-full">
-                {address}
-              </code>
-              <div className="text-sm text-[var(--muted)]">
+    <div className="flex flex-col min-h-screen">
+      {/* Cinematic Azure nav */}
+      <header className="fixed inset-x-0 top-0 z-50 border-b border-[var(--border)] bg-[var(--bg)]/70 backdrop-blur-xl">
+        <div className="mx-auto flex h-16 max-w-[1280px] items-center justify-between px-6 md:px-10">
+          <Link href="/" className="flex items-center gap-2">
+            <Image src="/logo.svg" alt="Stellar Drips" width={140} height={32} className="h-8 w-auto" />
+          </Link>
+
+          <div className="flex items-center gap-3">
+            {isConnected && isTestnet && <NetworkBadge />}
+            {isConnected && address && (
+              <div className="hidden items-center gap-2 text-xs text-[var(--faint)] sm:flex">
                 {isLoading ? (
-                  <span className="animate-pulse">Loading balance…</span>
+                  <span className="animate-pulse">Loading…</span>
                 ) : error ? (
                   <span className="text-[var(--danger)]">{error}</span>
                 ) : formatted ? (
-                  <>Balance: <strong className="font-mono text-[var(--text)]">{formatted}</strong> XLM</>
+                  <span className="font-mono text-[var(--muted)]">{formatted} XLM</span>
                 ) : null}
               </div>
-              {!isTestnet && (
-                <p className="text-sm text-[var(--warn)]">Switch wallet network to Testnet</p>
-              )}
-              {isTestnet && (
-                <a
-                  href={`https://friendbot.stellar.org?addr=${address}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-xs text-[var(--accent)] underline-offset-2 hover:underline"
-                >
-                  Get testnet XLM from Friendbot
-                </a>
-              )}
-            </div>
+            )}
+            <ConnectWallet />
+          </div>
+        </div>
+      </header>
+
+      {/* Main content */}
+      <main className="flex flex-1 w-full max-w-4xl flex-col items-center mx-auto py-24 px-6 gap-12">
+        {/* Wallet status */}
+        {isConnected && address && (
+          <header className="flex flex-col items-center gap-3 text-center w-full max-w-lg">
+            {!isTestnet && (
+              <div className="inline-flex items-center gap-2 rounded-full border border-[var(--warn)]/30 bg-[var(--warn)]/10 px-4 py-2 text-xs text-[var(--warn)]">
+                <span className="h-1.5 w-1.5 rounded-full bg-[var(--warn)]" />
+                Switch wallet network to Testnet
+              </div>
+            )}
+            {isTestnet && (
+              <a
+                href={`https://friendbot.stellar.org?addr=${address}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border)] bg-[var(--surface-2)] px-4 py-2 text-xs text-[var(--muted)] transition-colors hover:text-[var(--accent)]"
+              >
+                🪣 Get testnet XLM from Friendbot
+              </a>
+            )}
           </header>
         )}
 
         {/* Disconnected */}
         {!isConnected && (
-          <section className="flex flex-col items-center gap-6 text-center w-full max-w-lg py-12">
-            <h2 className="text-2xl font-semibold tracking-tight text-[var(--text)]">
-              Automated recurring payments on Stellar
+          <section className="flex flex-col items-center gap-6 text-center w-full max-w-lg py-16">
+            <h2 className="font-[family-name:var(--font-display)] text-[clamp(1.6rem,3vw,2.2rem)] font-semibold leading-[1.05] text-[var(--text)]">
+              Automated recurring payments on <span className="text-[var(--accent-bright)]">Stellar</span>
             </h2>
             <p className="text-sm text-[var(--muted)] leading-relaxed max-w-sm">
               Create subscription-based payments powered by Soroban smart contracts.
@@ -98,6 +117,7 @@ function DappContent() {
         )}
       </main>
 
+      {/* Dialogs */}
       <TopUpDialog
         open={!!topUpTarget}
         onClose={() => setTopUpTarget(null)}

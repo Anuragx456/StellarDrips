@@ -2,6 +2,10 @@
 
 import type { Subscription } from "@/lib/types";
 import { formatXlm, formatDate, shortAddress } from "@/lib/types";
+import { DarkCard } from "@/components/primitives/DarkCard";
+import { Pill } from "@/components/primitives/Pill";
+import { MonoValue } from "@/components/primitives/MonoValue";
+import { GlowButton } from "@/components/primitives/GlowButton";
 
 interface SubscriptionCardProps {
   sub: Subscription;
@@ -9,93 +13,101 @@ interface SubscriptionCardProps {
   onCancel: () => void;
 }
 
-const STATUS_CONFIG: Record<number, { label: string; bg: string; text: string; dot: string }> = {
-  0: { label: "Active", bg: "bg-emerald-50 dark:bg-emerald-950", text: "text-emerald-700 dark:text-emerald-300", dot: "bg-emerald-500" },
-  1: { label: "Cancelled", bg: "bg-zinc-100 dark:bg-zinc-800", text: "text-zinc-500 dark:text-zinc-400", dot: "bg-zinc-400" },
-  2: { label: "Expired", bg: "bg-red-50 dark:bg-red-950", text: "text-red-700 dark:text-red-300", dot: "bg-red-500" },
-};
-
-function escrowWidth(sub: Subscription): string {
-  if (sub.amount <= 0) return "0%";
+function escrowPercent(sub: Subscription): number {
+  if (sub.amount <= 0) return 0;
   const pct = Number((sub.escrowBalance * BigInt(100)) / sub.amount);
-  return `${Math.min(100, pct)}%`;
+  return Math.min(100, pct);
+}
+
+function intervalLabel(seconds: number): string {
+  if (seconds >= 2592000) return "Monthly";
+  if (seconds >= 604800) return "Weekly";
+  return "Daily";
 }
 
 export function SubscriptionCard({ sub, onTopUp, onCancel }: SubscriptionCardProps) {
-  const cfg = STATUS_CONFIG[sub.status] ?? STATUS_CONFIG[2];
   const isActive = sub.status === 0;
+  const isCancelled = sub.status === 1;
 
   return (
-    <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5 flex flex-col gap-3">
+    <DarkCard className="flex flex-col gap-4 p-5">
+      {/* Header: status + payment count */}
       <div className="flex items-center justify-between">
-        <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ${cfg.bg} ${cfg.text}`}>
-          <span className={`size-1.5 rounded-full ${cfg.dot}`} />
-          {cfg.label}
+        {isActive ? (
+          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-[var(--success)]">
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[var(--success)] opacity-75" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-[var(--success)]" />
+            </span>
+            Active
+          </span>
+        ) : (
+          <Pill className="!bg-[var(--danger)]/10 !text-[var(--danger)]">
+            {isCancelled ? "Cancelled" : "Expired"}
+          </Pill>
+        )}
+        <span className="font-mono text-[10px] text-[var(--faint)]">
+          #{sub.paymentCount} payments
         </span>
-        <span className="text-xs text-zinc-400 font-mono">#{sub.paymentCount} payments</span>
       </div>
 
-      <div className="flex flex-col gap-0.5">
-        <span className="text-xs text-zinc-500 dark:text-zinc-400">Recipient</span>
-        <span className="text-sm font-mono text-zinc-800 dark:text-zinc-200" title={sub.recipient}>
-          {shortAddress(sub.recipient)}
-        </span>
-      </div>
+      {/* Recipient */}
+      <MonoValue label="Recipient" value={shortAddress(sub.recipient)} />
 
-      <div className="flex justify-between">
+      {/* Amount + Interval */}
+      <div className="flex items-center justify-between">
         <div className="flex flex-col gap-0.5">
-          <span className="text-xs text-zinc-500 dark:text-zinc-400">Amount</span>
-          <span className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">
+          <span className="text-[10px] uppercase tracking-[0.08em] text-[var(--faint)]">Amount</span>
+          <span className="text-sm font-semibold text-[var(--text)]">
             {formatXlm(sub.amount)} XLM
           </span>
         </div>
         <div className="flex flex-col gap-0.5 text-right">
-          <span className="text-xs text-zinc-500 dark:text-zinc-400">
-            {sub.intervalSeconds >= 2592000 ? "Monthly" : sub.intervalSeconds >= 604800 ? "Weekly" : "Daily"}
+          <span className="text-xs font-medium text-[var(--muted)]">
+            {intervalLabel(sub.intervalSeconds)}
           </span>
-          <span className="text-xs text-zinc-400">
+          <span className="font-mono text-[10px] text-[var(--faint)]">
             Every {sub.intervalSeconds >= 86400 ? `${Math.round(sub.intervalSeconds / 86400)}d` : `${sub.intervalSeconds}s`}
           </span>
         </div>
       </div>
 
+      {/* Escrow bar */}
       <div className="flex flex-col gap-1">
-        <div className="flex justify-between text-xs">
-          <span className="text-zinc-500">Escrow</span>
-          <span className="text-zinc-700 dark:text-zinc-300 font-medium">{formatXlm(sub.escrowBalance)} XLM</span>
+        <div className="flex items-center justify-between text-xs">
+          <span className="text-[var(--faint)]">Escrow</span>
+          <span className="font-mono text-[var(--muted)]">{formatXlm(sub.escrowBalance)} XLM</span>
         </div>
-        <div className="h-1.5 rounded-full bg-zinc-200 dark:bg-zinc-700 overflow-hidden">
+        <div className="h-1.5 overflow-hidden rounded-full bg-[var(--surface-3)]">
           <div
-            className="h-full rounded-full bg-blue-500 transition-all"
-            style={{ width: escrowWidth(sub) }}
+            className="h-full rounded-full bg-[var(--accent)] transition-all duration-500"
+            style={{ width: `${escrowPercent(sub)}%` }}
           />
         </div>
       </div>
 
-      <div className="text-xs text-zinc-500 dark:text-zinc-400">
+      {/* Next payment */}
+      <div className="text-xs text-[var(--faint)]">
         {isActive && sub.nextPaymentTime > 0 ? (
-          <>Next: {formatDate(sub.nextPaymentTime)}</>
+          <>Next: <span className="font-medium text-[var(--muted)]">{formatDate(sub.nextPaymentTime)}</span></>
+        ) : sub.status === 2 ? (
+          "Expired"
         ) : (
-          <>{sub.status === 2 ? "Expired" : "No upcoming payments"}</>
+          "No upcoming payments"
         )}
       </div>
 
+      {/* Actions */}
       {isActive && (
         <div className="flex gap-2 pt-1">
-          <button
-            onClick={onTopUp}
-            className="flex-1 rounded-lg bg-[var(--brand)] px-3 py-2 text-xs font-medium text-white hover:bg-[var(--brand-hover)] transition-colors cursor-pointer"
-          >
+          <GlowButton variant="primary" onClick={onTopUp} className="flex-1 !py-2 !text-xs">
             Top Up
-          </button>
-          <button
-            onClick={onCancel}
-            className="flex-1 rounded-lg border border-red-300 dark:border-red-800 px-3 py-2 text-xs font-medium text-[var(--danger-text)] dark:text-[var(--danger-text)] hover:bg-red-50 dark:hover:bg-red-950 transition-colors cursor-pointer"
-          >
+          </GlowButton>
+          <GlowButton variant="ghost" onClick={onCancel} className="flex-1 !py-2 !text-xs !border-[var(--danger)]/30 !text-[var(--danger)]">
             Cancel
-          </button>
+          </GlowButton>
         </div>
       )}
-    </div>
+    </DarkCard>
   );
 }
