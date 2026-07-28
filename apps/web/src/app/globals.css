@@ -1,47 +1,166 @@
 @import "tailwindcss";
 
+/* ============================================================
+   CINEMATIC AZURE — Design tokens for Stellar Drips
+   A near-black stage lit by electric-azure light beams;
+   charcoal glass cards with hairline edges float on darkness.
+   ============================================================ */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-  --brand: #2563eb;
-  --brand-hover: #1d4ed8;
-  --success-bg: #ecfdf5;
-  --success-text: #059669;
-  --success-dot: #10b981;
-  --warning-bg: #fffbeb;
-  --warning-text: #d97706;
-  --warning-dot: #f59e0b;
-  --danger-bg: #fef2f2;
-  --danger-text: #dc2626;
-  --danger-dot: #ef4444;
-  --danger-hover: #dc2626;
+  /* ── Backgrounds ── */
+  --bg: #050608;
+  --bg-2: #070809;
+  --surface: #0D0F13;
+  --surface-2: #121419;
+  --surface-3: #171A20;
+
+  /* ── Borders ── */
+  --border: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.14);
+  --edge-highlight: rgba(255, 255, 255, 0.06);
+
+  /* ── Text ── */
+  --text: #F4F6FA;
+  --muted: #9AA1AC;
+  --faint: #6B7280;
+
+  /* ── Accent (azure only — no indigo, violet, or pink) ── */
+  --accent: #2E7DFF;
+  --accent-bright: #5C9DFF;
+  --accent-deep: #0B46B8;
+  --accent-soft: rgba(46, 125, 255, 0.14);
+
+  /* ── Semantic ── */
+  --success: #34D399;
+  --warn: #FBBF24;
+  --danger: #FB7185;
+
+  /* ── Glow ── */
+  --glow: rgba(46, 125, 255, 0.55);
+
+  /* ── Radii ── */
+  --r-pill: 9999px;
+  --r-card: 22px;
+  --r-input: 14px;
+  --r-tile: 12px;
+
+  /* ── Shadows / Glow ── */
+  --shadow-card: 0 1px 0 var(--edge-highlight) inset,
+                 0 24px 60px -28px rgba(0, 0, 0, 0.9);
+  --shadow-card-hover: 0 0 0 1px rgba(92, 157, 255, 0.25),
+                       0 30px 80px -30px rgba(46, 125, 255, 0.35);
+  --glow-btn: 0 0 0 1px rgba(92, 157, 255, 0.45),
+              0 10px 34px -8px rgba(46, 125, 255, 0.65);
+  --glow-btn-hover: 0 0 0 1px rgba(92, 157, 255, 0.7),
+                    0 14px 44px -8px rgba(46, 125, 255, 0.85);
+
+  /* ── Easing ── */
+  --ease-out-expo: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
+/* ── Tailwind v4 theme mapping ── */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-  --color-brand: var(--brand);
-  --color-brand-hover: var(--brand-hover);
+  --color-bg: var(--bg);
+  --color-bg-2: var(--bg-2);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-edge-highlight: var(--edge-highlight);
+  --color-text: var(--text);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+  --color-accent: var(--accent);
+  --color-accent-bright: var(--accent-bright);
+  --color-accent-deep: var(--accent-deep);
+  --color-accent-soft: var(--accent-soft);
+  --color-success: var(--success);
+  --color-warn: var(--warn);
+  --color-danger: var(--danger);
+
+  --radius-card: var(--r-card);
+  --radius-input: var(--r-input);
+  --radius-tile: var(--r-tile);
+
+  --shadow-card: var(--shadow-card);
+  --shadow-card-hover: var(--shadow-card-hover);
+  --glow-btn: var(--glow-btn);
+  --glow-btn-hover: var(--glow-btn-hover);
+
+  --ease-out-expo: var(--ease-out-expo);
+
+  --font-display: "Space Grotesk", "General Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-body: "Manrope", "Satoshi", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", "Geist Mono", ui-monospace, monospace;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-    --warning-bg: #422006;
-    --warning-text: #fbbf24;
-    --warning-dot: #f59e0b;
-    --danger-bg: #450a0a;
-    --danger-text: #fca5a5;
-    --danger-dot: #ef4444;
-    --danger-hover: #b91c1c;
-  }
+/* ── Base styles ── */
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  background-color: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ── Accent focus ring for all interactive elements ── */
+*:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* ── Scrollbar styling ── */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-2);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--surface-3);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--faint);
+}
+
+/* ── Selection ── */
+::selection {
+  background: var(--accent-soft);
+  color: var(--accent-bright);
+}
+
+/* ── Reduced motion: disable ambient animations, keep functional feedback ── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .light-beam,
+  .marquee,
+  .scan-line,
+  .count-up {
+    display: none;
+  }
+
+  .stat-value {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  [data-reveal] {
+    opacity: 1 !important;
+    transform: none !important;
+  }
 }
