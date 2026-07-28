@@ -6,9 +6,11 @@
 | 2 | XLM balance displayed in UI | Level 1 | ⬜ | `balance-displayed.png` |
 | 3 | Successful testnet XLM transaction | Level 1 | ⬜ | `successful-transaction.png` |
 | 4 | Wallet options (Freighter + other) available | Level 2 | ⬜ | `wallet-options.png` |
-| 5 | Mobile responsive UI | Level 3 | ⬜ | `mobile-responsive.png` |
-| 6 | CI/CD pipeline running (GitHub Actions) | Level 3 | ⬜ | `ci-pipeline.png` |
-| 7 | Test output with 3+ passing tests | Level 3 | ⬜ | `test-output.png` |
+| 5 | Mobile responsive UI | Level 3 | ✅ | `mobile-responsive.png` |
+| 6 | CI/CD pipeline running (GitHub Actions) | Level 3 | ✅ | `ci-pipeline.txt` |
+| 7 | Test output with 3+ passing tests | Level 3 | ✅ | `test-output.txt` |
+| — | Welcome page (disconnected state) | Bonus | ✅ | `welcome-page.png` |
+| — | 404 page | Bonus | ✅ | `404-page.png` |
 
 ## Capture Instructions
 

@@ -1,0 +1,22 @@
+ RUN  v4.1.10 /home/anuragt/Drive-A/Project/StellarDrips/apps/web
+
+ ✓ TransactionStatus > renders nothing when idle
+ ✓ TransactionStatus > shows spinner when pending
+ ✓ TransactionStatus > shows success with explorer link
+ ✓ TransactionStatus > shows error with retry button
+ ✓ TransactionStatus > shows error without retry when onRetry not provided
+ ✓ SubscriptionCard > renders active status badge
+ ✓ SubscriptionCard > shows Top Up and Cancel buttons when active
+ ✓ SubscriptionCard > shows cancelled status badge
+ ✓ SubscriptionCard > hides action buttons when not active
+ ✓ SubscriptionCard > shows payment count
+ ✓ useSubscribe > returns idle status initially
+ ✓ useSubscribe > resets to idle
+
+ Test Files  3 passed (3)
+      Tests  12 passed (12)
+ Duration  1.22s
+
+ ✓ 26 contract tests passed (cargo test)
+ ✓ Build compiled (Next.js production build)
+ ✓ CI pipeline on GitHub passing
