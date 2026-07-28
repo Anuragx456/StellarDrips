@@ -43,7 +43,7 @@ export function SubscriptionList({ onTopUp, onCancel }: SubscriptionListProps) {
           <p className="text-sm text-red-600 dark:text-red-400 mb-3">⚠ {error}</p>
           <button
             onClick={refresh}
-            className="rounded-lg bg-red-600 px-4 py-2 text-xs font-medium text-white hover:bg-red-700 transition-colors cursor-pointer"
+            className="rounded-lg bg-[var(--danger-text)] px-4 py-2 text-xs font-medium text-white hover:bg-[var(--danger-hover)] transition-colors cursor-pointer"
           >
             Try Again
           </button>
@@ -72,7 +72,7 @@ export function SubscriptionList({ onTopUp, onCancel }: SubscriptionListProps) {
         <h2 className="text-xl font-semibold text-black dark:text-zinc-50">Your Subscriptions</h2>
         <button
           onClick={refresh}
-          className="text-xs text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
+          className="text-xs text-[var(--brand)] dark:text-[var(--brand)] hover:underline cursor-pointer"
         >
           Refresh
         </button>

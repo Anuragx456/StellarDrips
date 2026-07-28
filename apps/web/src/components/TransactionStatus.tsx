@@ -32,14 +32,14 @@ export function TransactionStatus({
       {/* Success */}
       {status === "success" && txHash && (
         <div className="flex flex-col items-center gap-1">
-          <span className="text-sm font-medium text-emerald-600 dark:text-emerald-400">
+          <span className="text-sm font-medium text-[var(--success-text)]">
             ✅ Transaction confirmed
           </span>
           <a
             href={`${EXPLORER_BASE}/tx/${txHash}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-xs font-mono text-blue-600 dark:text-blue-400 underline-offset-2 hover:underline"
+            className="text-xs font-mono text-[var(--brand)] dark:text-[var(--brand)] underline-offset-2 hover:underline"
           >
             View on Stellar.Expert →
           </a>
@@ -49,13 +49,13 @@ export function TransactionStatus({
       {/* Error */}
       {status === "error" && (
         <div className="flex flex-col items-center gap-2">
-          <span className="text-sm text-red-600 dark:text-red-400">
+          <span className="text-sm text-[var(--danger-text)]">
             ⚠ {error ?? "Transaction failed"}
           </span>
           {onRetry && (
             <button
               onClick={onRetry}
-              className="text-xs text-blue-600 dark:text-blue-400 underline underline-offset-2 hover:no-underline cursor-pointer"
+              className="text-xs text-[var(--brand)] dark:text-[var(--brand)] underline underline-offset-2 hover:no-underline cursor-pointer"
             >
               Try again
             </button>

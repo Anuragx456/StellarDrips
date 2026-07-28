@@ -3,6 +3,7 @@
 import { useCancel } from "@/hooks/useCancel";
 import { TransactionStatus } from "./TransactionStatus";
 import type { TxStatusType } from "./TransactionStatus";
+import { formatXlm } from "@/lib/types";
 
 interface CancelDialogProps {
   open: boolean;
@@ -12,13 +13,6 @@ interface CancelDialogProps {
   refundRecipient: string;
   escrowBalance: bigint;
   onSuccess: () => void;
-}
-
-function formatXlm(balance: bigint): string {
-  return (Number(balance) / 10_000_000).toLocaleString(undefined, {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 7,
-  });
 }
 
 export function CancelDialog({ open, onClose, subscriber, id, refundRecipient, escrowBalance, onSuccess }: CancelDialogProps) {
@@ -60,7 +54,7 @@ export function CancelDialog({ open, onClose, subscriber, id, refundRecipient, e
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={handleClose}>
       <div className="rounded-xl bg-white dark:bg-zinc-900 p-6 shadow-xl max-w-sm w-full mx-4" onClick={(e) => e.stopPropagation()}>
-        <h3 className="text-lg font-semibold text-red-600 dark:text-red-400 mb-2">Cancel Subscription</h3>
+        <h3 className="text-lg font-semibold text-[var(--danger-text)] dark:text-[var(--danger-text)] mb-2">Cancel Subscription</h3>
 
         <div className="text-sm text-zinc-600 dark:text-zinc-400 mb-4 space-y-2">
           <p>This will immediately cancel this subscription and refund the remaining escrow balance.</p>
@@ -78,7 +72,7 @@ export function CancelDialog({ open, onClose, subscriber, id, refundRecipient, e
           <button
             onClick={handleConfirm}
             disabled={isPending}
-            className="flex-1 rounded-lg bg-red-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-red-700 transition-colors disabled:opacity-50 cursor-pointer"
+            className="flex-1 rounded-lg bg-[var(--danger-text)] px-4 py-2.5 text-sm font-medium text-white hover:bg-[var(--danger-hover)] transition-colors disabled:opacity-50 cursor-pointer"
           >
             {isPending ? "Cancelling…" : "Confirm Cancel"}
           </button>

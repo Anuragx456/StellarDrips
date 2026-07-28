@@ -28,18 +28,10 @@ export default function Home() {
 
   return (
     <div className="flex flex-col flex-1 items-center bg-zinc-50 dark:bg-black">
-      <main className="flex flex-1 w-full max-w-5xl flex-col items-center py-8 px-4 gap-10">
-        {/* Header */}
-        <header className="flex flex-col items-center gap-4 text-center">
-          <h1 className="text-4xl font-bold tracking-tight text-black dark:text-zinc-50">
-            Stellar Drips
-          </h1>
-          <p className="max-w-lg text-base text-zinc-600 dark:text-zinc-400">
-            Recurring payments and subscriptions on the Stellar network.
-          </p>
-
-          {/* Wallet status */}
-          {isConnected && address && (
+      <main className="flex flex-1 w-full max-w-4xl flex-col items-center py-10 px-6 gap-12">
+        {/* Wallet status — shown when connected */}
+        {isConnected && address && (
+          <header className="flex flex-col items-center gap-3 text-center w-full max-w-lg">
             <div className="flex flex-col items-center gap-2">
               <code className="text-xs font-mono text-zinc-500 bg-zinc-100 dark:bg-zinc-900 px-3 py-1.5 rounded-lg break-all max-w-full">
                 {address}
@@ -49,14 +41,14 @@ export default function Home() {
                 {isLoading ? (
                   <span className="animate-pulse">Loading balance…</span>
                 ) : error ? (
-                  <span className="text-red-500">⚠ {error}</span>
+                  <span className="text-[var(--danger-text)]">{error}</span>
                 ) : formatted ? (
                   <>Balance: <strong className="font-mono text-zinc-900 dark:text-zinc-100">{formatted}</strong> XLM</>
                 ) : null}
               </div>
 
               {!isTestnet && (
-                <p className="text-sm text-amber-600 dark:text-amber-400">
+                <p className="text-sm text-[var(--warning-text)]">
                   ⚠ Switch wallet network to Testnet
                 </p>
               )}
@@ -66,32 +58,46 @@ export default function Home() {
                   href={`https://friendbot.stellar.org?addr=${address}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-xs text-blue-600 dark:text-blue-400 underline-offset-2 hover:underline"
+                  className="text-xs text-[var(--brand)] underline-offset-2 hover:underline"
                 >
                   🪣 Get testnet XLM from Friendbot
                 </a>
               )}
             </div>
-          )}
-        </header>
+          </header>
+        )}
 
         {/* Disconnected state */}
         {!isConnected && (
-          <p className="text-sm text-zinc-400 dark:text-zinc-500">
-            Connect your wallet using the button above to get started.
-          </p>
+          <section className="flex flex-col items-center gap-6 text-center w-full max-w-lg py-12">
+            <span className="text-5xl">✦</span>
+            <h2 className="text-2xl font-semibold tracking-tight text-zinc-800 dark:text-zinc-200">
+              Automated recurring payments on Stellar
+            </h2>
+            <p className="text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed max-w-sm">
+              Create subscription-based payments powered by Soroban smart contracts.
+              Connect your wallet to get started.
+            </p>
+            <div className="flex flex-wrap items-center justify-center gap-2 text-xs text-zinc-400 dark:text-zinc-500">
+              <span className="inline-flex items-center gap-1">🟢 Create subscriptions</span>
+              <span className="hidden sm:inline text-zinc-300 dark:text-zinc-600">·</span>
+              <span className="inline-flex items-center gap-1">🪙 Automated payouts</span>
+              <span className="hidden sm:inline text-zinc-300 dark:text-zinc-600">·</span>
+              <span className="inline-flex items-center gap-1">📊 Live event feed</span>
+            </div>
+          </section>
         )}
 
         {/* Payment form */}
         {isConnected && isTestnet && (
-          <section className="w-full flex flex-col items-center pt-4 border-t border-zinc-200 dark:border-zinc-800">
+          <section className="w-full max-w-lg flex flex-col items-center pt-6 border-t border-zinc-200 dark:border-zinc-800">
             <PaymentForm />
           </section>
         )}
 
         {/* Subscribe form */}
         {isConnected && isTestnet && (
-          <section className="w-full flex flex-col items-center border-t border-zinc-200 dark:border-zinc-800 pt-8">
+          <section className="w-full max-w-lg flex flex-col items-center border-t border-zinc-200 dark:border-zinc-800 pt-8">
             <SubscribeForm />
           </section>
         )}

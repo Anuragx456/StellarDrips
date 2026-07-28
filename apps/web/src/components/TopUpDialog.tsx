@@ -4,6 +4,7 @@ import { useState, type FormEvent } from "react";
 import { useTopUp } from "@/hooks/useTopUp";
 import { TransactionStatus } from "./TransactionStatus";
 import type { TxStatusType } from "./TransactionStatus";
+import { formatXlm } from "@/lib/types";
 
 interface TopUpDialogProps {
   open: boolean;
@@ -12,13 +13,6 @@ interface TopUpDialogProps {
   id: number;
   currentEscrow: bigint;
   onSuccess: () => void;
-}
-
-function formatXlm(balance: bigint): string {
-  return (Number(balance) / 10_000_000).toLocaleString(undefined, {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 7,
-  });
 }
 
 export function TopUpDialog({ open, onClose, subscriber, id, currentEscrow, onSuccess }: TopUpDialogProps) {
@@ -83,7 +77,7 @@ export function TopUpDialog({ open, onClose, subscriber, id, currentEscrow, onSu
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
               disabled={isPending}
-              className="w-full rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-950 px-4 py-2.5 text-sm text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 disabled:opacity-50"
+              className="w-full rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-950 px-4 py-2.5 text-sm text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-[var(--brand)]/50 disabled:opacity-50"
             />
           </div>
 
@@ -97,7 +91,7 @@ export function TopUpDialog({ open, onClose, subscriber, id, currentEscrow, onSu
             <button
               type="submit"
               disabled={isPending || !amount.trim()}
-              className="flex-1 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-blue-700 transition-colors disabled:opacity-50 cursor-pointer"
+              className="flex-1 rounded-lg bg-[var(--brand)] px-4 py-2.5 text-sm font-medium text-white hover:bg-[var(--brand-hover)] transition-colors disabled:opacity-50 cursor-pointer"
             >
               {isPending ? "Confirming…" : "Confirm Top Up"}
             </button>

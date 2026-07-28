@@ -35,7 +35,7 @@ export default function RootLayout({
         <WalletProvider>
           <ErrorBoundary>
             <header className="flex items-center justify-between px-6 py-4 border-b border-black/5 dark:border-white/10">
-              <span className="text-lg font-bold tracking-tight">✦ Stellar Drips</span>
+              <h1 className="text-lg font-bold tracking-tight text-[var(--foreground)]">✦ Stellar Drips</h1>
               <ConnectWallet />
             </header>
             {children}

@@ -1,6 +1,7 @@
 "use client";
 
 import type { Subscription } from "@/lib/types";
+import { formatXlm, formatDate, shortAddress } from "@/lib/types";
 
 interface SubscriptionCardProps {
   sub: Subscription;
@@ -14,22 +15,10 @@ const STATUS_CONFIG: Record<number, { label: string; bg: string; text: string; d
   2: { label: "Expired", bg: "bg-red-50 dark:bg-red-950", text: "text-red-700 dark:text-red-300", dot: "bg-red-500" },
 };
 
-function formatAddress(addr: string): string {
-  return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
-}
-
-function formatXlm(balance: bigint): string {
-  const num = Number(balance) / 10_000_000;
-  return num.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 7 });
-}
-
-function formatDate(ts: number): string {
-  return new Date(ts * 1000).toLocaleDateString(undefined, {
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+function escrowWidth(sub: Subscription): string {
+  if (sub.amount <= 0) return "0%";
+  const pct = Number((sub.escrowBalance * BigInt(100)) / sub.amount);
+  return `${Math.min(100, pct)}%`;
 }
 
 export function SubscriptionCard({ sub, onTopUp, onCancel }: SubscriptionCardProps) {
@@ -49,7 +38,7 @@ export function SubscriptionCard({ sub, onTopUp, onCancel }: SubscriptionCardPro
       <div className="flex flex-col gap-0.5">
         <span className="text-xs text-zinc-500 dark:text-zinc-400">Recipient</span>
         <span className="text-sm font-mono text-zinc-800 dark:text-zinc-200" title={sub.recipient}>
-          {formatAddress(sub.recipient)}
+          {shortAddress(sub.recipient)}
         </span>
       </div>
 
@@ -78,9 +67,7 @@ export function SubscriptionCard({ sub, onTopUp, onCancel }: SubscriptionCardPro
         <div className="h-1.5 rounded-full bg-zinc-200 dark:bg-zinc-700 overflow-hidden">
           <div
             className="h-full rounded-full bg-blue-500 transition-all"
-            style={{
-              width: `${sub.amount > 0 ? Math.min(100, Number((sub.escrowBalance * BigInt(100)) / sub.amount)) : 0}%`,
-            }}
+            style={{ width: escrowWidth(sub) }}
           />
         </div>
       </div>
@@ -97,13 +84,13 @@ export function SubscriptionCard({ sub, onTopUp, onCancel }: SubscriptionCardPro
         <div className="flex gap-2 pt-1">
           <button
             onClick={onTopUp}
-            className="flex-1 rounded-lg bg-blue-600 px-3 py-2 text-xs font-medium text-white hover:bg-blue-700 transition-colors cursor-pointer"
+            className="flex-1 rounded-lg bg-[var(--brand)] px-3 py-2 text-xs font-medium text-white hover:bg-[var(--brand-hover)] transition-colors cursor-pointer"
           >
             Top Up
           </button>
           <button
             onClick={onCancel}
-            className="flex-1 rounded-lg border border-red-300 dark:border-red-800 px-3 py-2 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950 transition-colors cursor-pointer"
+            className="flex-1 rounded-lg border border-red-300 dark:border-red-800 px-3 py-2 text-xs font-medium text-[var(--danger-text)] dark:text-[var(--danger-text)] hover:bg-red-50 dark:hover:bg-red-950 transition-colors cursor-pointer"
           >
             Cancel
           </button>

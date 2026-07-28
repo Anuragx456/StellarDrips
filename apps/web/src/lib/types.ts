@@ -89,3 +89,27 @@ export const EVENT_LABELS: Record<EventType, string> = {
 
 /** Explorer base URL. */
 export const EXPLORER_BASE = "https://stellar.expert/explorer/testnet";
+
+/** Format a stroop-denominated bigint balance to a human-readable XLM string. */
+export function formatXlm(balance: bigint): string {
+  const num = Number(balance) / 10_000_000;
+  return num.toLocaleString(undefined, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 7,
+  });
+}
+
+/** Format a unix-epoch timestamp to a short readable date string. */
+export function formatDate(ts: number): string {
+  return new Date(ts * 1000).toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+/** Truncate a Stellar address for display. */
+export function shortAddress(addr: string): string {
+  return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
+}
