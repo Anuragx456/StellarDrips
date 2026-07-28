@@ -44,5 +44,10 @@
   "trustedDependencies": [
     "sharp",
     "unrs-resolver"
-  ]
+  ],
+  "overrides": {
+    "@twind/preset-tailwind": {
+      "typescript": "$typescript"
+    }
+  }
 }

@@ -11,8 +11,8 @@ import { NetworkBadge } from "@/components/primitives/NetworkBadge";
 const NAV_LINKS = [
   { label: "How it works", href: "#how-it-works" },
   { label: "Contracts", href: "#contracts" },
-  { label: "Docs", href: "/docs" },
-  { label: "Community", href: "#community" },
+  { label: "Docs", href: "https://github.com/Anuragx456/StellarDrips#readme" },
+  { label: "Community", href: "https://discord.gg/stellar" },
 ];
 
 export function Nav() {
@@ -42,7 +42,9 @@ export function Nav() {
         {/* Desktop right */}
         <div className="hidden items-center gap-3 md:flex">
           <NetworkBadge />
-          <GlowButton variant="white">Connect Wallet</GlowButton>
+          <Link href="/app">
+            <GlowButton variant="white">Launch App</GlowButton>
+          </Link>
         </div>
 
         {/* Mobile hamburger */}
@@ -81,7 +83,9 @@ export function Nav() {
               ))}
               <div className="flex items-center gap-3 pt-2">
                 <NetworkBadge />
-                <GlowButton variant="white">Connect Wallet</GlowButton>
+                <Link href="/app" onClick={() => setMobileOpen(false)}>
+                  <GlowButton variant="white">Launch App</GlowButton>
+                </Link>
               </div>
             </div>
           </motion.div>
