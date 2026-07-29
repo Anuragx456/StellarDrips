@@ -33,9 +33,39 @@ export function SubscribeForm() {
     status.type === "signing" ||
     status.type === "submitting";
 
+  const amountVal = Number(amount);
+  const escrowVal = Number(initialEscrow);
+
+  const amountError =
+    amount !== "" && (isNaN(amountVal) || amountVal <= 0)
+      ? "Amount must be greater than 0"
+      : undefined;
+
+  const escrowTooLow =
+    amount !== "" &&
+    initialEscrow !== "" &&
+    !isNaN(amountVal) &&
+    !isNaN(escrowVal) &&
+    escrowVal < amountVal;
+
+  const escrowError =
+    initialEscrow !== "" && (isNaN(escrowVal) || escrowVal <= 0)
+      ? "Escrow must be greater than 0"
+      : escrowTooLow
+        ? "Initial escrow must be at least equal to payment amount"
+        : undefined;
+
+  const isValid =
+    isValidPublicKey(recipient.trim()) &&
+    amount.trim() !== "" &&
+    !amountError &&
+    initialEscrow.trim() !== "" &&
+    !escrowError &&
+    expirationDays >= 1;
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (isPending) return;
+    if (isPending || !isValid) return;
 
     const amountNum = BigInt(Math.round(Number(amount) * 10_000_000));
     const escrowNum = BigInt(Math.round(Number(initialEscrow) * 10_000_000));
@@ -91,6 +121,7 @@ export function SubscribeForm() {
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
             disabled={isPending}
+            error={amountError}
           />
 
           {/* Interval select */}
@@ -123,6 +154,7 @@ export function SubscribeForm() {
             value={initialEscrow}
             onChange={(e) => setInitialEscrow(e.target.value)}
             disabled={isPending}
+            error={escrowError}
             hint="Funds locked in contract — cancel anytime for prorated refund"
           />
 
@@ -140,7 +172,7 @@ export function SubscribeForm() {
             <GlowButton
               type="submit"
               variant="primary"
-              disabled={isPending || !recipient.trim() || !amount.trim() || !initialEscrow.trim()}
+              disabled={isPending || !isValid}
               className="flex-1"
             >
               {isPending ? "Subscribing…" : "Create Subscription"}

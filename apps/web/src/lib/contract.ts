@@ -14,12 +14,12 @@ function getRpcUrl(): string {
   return "https://soroban-testnet.stellar.org";
 }
 
-/** Get the contract ID from env. */
+/** Get the contract ID from env or default to testnet contract. */
 function getContractId(): string {
   if (typeof process !== "undefined" && process.env.NEXT_PUBLIC_CONTRACT_ID) {
     return process.env.NEXT_PUBLIC_CONTRACT_ID;
   }
-  return "";
+  return "CCEWB5F27ETPU7FAQWDEWEGGTL4DIUCWNHU36RV2MDXSSGFJUDSONPAC";
 }
 
 /** Get the token contract ID (wrapped XLM SAC) from env or default to testnet. */
