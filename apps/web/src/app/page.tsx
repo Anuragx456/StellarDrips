@@ -7,7 +7,6 @@ import { WhyDrips } from "@/components/landing/WhyDrips";
 import { TechStack } from "@/components/landing/TechStack";
 import { DripBuilder } from "@/components/landing/DripBuilder";
 import { Testimonials } from "@/components/landing/Testimonials";
-import { Pricing } from "@/components/landing/Pricing";
 import { FAQ } from "@/components/landing/FAQ";
 import { FinalCTA } from "@/components/landing/FinalCTA";
 import { Footer } from "@/components/landing/Footer";
@@ -23,7 +22,6 @@ export default function Home() {
         <TechStack />
         <DripBuilder />
         <Testimonials />
-        <Pricing />
         <FAQ />
         <FinalCTA />
       </main>

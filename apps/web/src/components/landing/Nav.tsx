@@ -10,7 +10,6 @@ import { NetworkBadge } from "@/components/primitives/NetworkBadge";
 
 const NAV_LINKS = [
   { label: "How it works", href: "#how-it-works" },
-  { label: "Contracts", href: "#contracts" },
   { label: "Docs", href: "https://github.com/Anuragx456/StellarDrips#readme" },
   { label: "Community", href: "https://discord.gg/stellar" },
 ];

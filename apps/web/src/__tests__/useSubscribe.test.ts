@@ -14,6 +14,7 @@ vi.mock("@/lib/contract", () => ({
     getAccount: vi.fn().mockRejectedValue(new Error("no network")),
   }),
   getContract: () => ({}),
+  getTokenId: () => "CDFJZD3D5Y2RF27NFM4BPDMSKYMDMD5AT2ZQCAWAXAZZBONUB3M3BNCO",
   encodeSubscribeArgs: vi.fn(() => []),
   getNetworkPassphrase: () => "Test SDF Network ; September 2015",
 }));

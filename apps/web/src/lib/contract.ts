@@ -22,6 +22,14 @@ function getContractId(): string {
   return "";
 }
 
+/** Get the token contract ID (wrapped XLM SAC) from env or default to testnet. */
+export function getTokenId(): string {
+  if (typeof process !== "undefined" && process.env.NEXT_PUBLIC_TOKEN_ID) {
+    return process.env.NEXT_PUBLIC_TOKEN_ID;
+  }
+  return "CDFJZD3D5Y2RF27NFM4BPDMSKYMDMD5AT2ZQCAWAXAZZBONUB3M3BNCO";
+}
+
 /** Get the network passphrase from env or default to testnet. */
 export function getNetworkPassphrase(): string {
   if (

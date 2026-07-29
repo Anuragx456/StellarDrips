@@ -10,6 +10,7 @@ import { useWallet } from "@/context/WalletContext";
 import {
   getServer,
   getContract,
+  getTokenId,
   encodeSubscribeArgs,
   getNetworkPassphrase,
 } from "@/lib/contract";
@@ -76,7 +77,7 @@ export function useSubscribe(): UseSubscribeReturn {
         const args = encodeSubscribeArgs(
           address,
           input.recipient,
-          input.token ?? address,
+          input.token ?? getTokenId(),
           input.amount,
           input.intervalSeconds,
           input.initialEscrow,
@@ -84,7 +85,7 @@ export function useSubscribe(): UseSubscribeReturn {
         );
 
         const tx = new TransactionBuilder(account, {
-          fee: "100",
+          fee: "1000",
           networkPassphrase: passphrase,
         })
           .addOperation(contract.call("subscribe", ...args))

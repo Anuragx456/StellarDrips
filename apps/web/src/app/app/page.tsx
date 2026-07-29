@@ -13,7 +13,6 @@ import { SubscriptionList } from "@/components/SubscriptionList";
 import { EventDashboard } from "@/components/EventDashboard";
 import { TopUpDialog } from "@/components/TopUpDialog";
 import { CancelDialog } from "@/components/CancelDialog";
-import { NetworkBadge } from "@/components/primitives/NetworkBadge";
 import { ConnectWallet } from "@/components/ConnectWallet";
 import type { Subscription } from "@/lib/types";
 
@@ -41,7 +40,6 @@ function DappContent() {
           </Link>
 
           <div className="flex items-center gap-3">
-            {isConnected && isTestnet && <NetworkBadge />}
             {isConnected && address && (
               <div className="flex items-center gap-2 text-xs text-[var(--faint)]">
                 {isLoading ? (

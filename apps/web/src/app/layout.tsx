@@ -17,6 +17,7 @@ export default function RootLayout({
     <html
       lang="en"
       className={`${fontDisplay.variable} ${fontBody.variable} ${fontMono.variable} antialiased`}
+      suppressHydrationWarning
     >
       <body className="min-h-screen bg-[var(--bg)] text-[var(--text)] font-body">
         {children}

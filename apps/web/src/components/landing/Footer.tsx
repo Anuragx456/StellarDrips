@@ -8,7 +8,7 @@ import Image from "next/image";
 const COLUMNS = [
   {
     title: "Product",
-    links: ["How it works", "Pricing", "Changelog", "Roadmap"],
+    links: ["How it works", "Changelog", "Roadmap"],
   },
   {
     title: "Developers",

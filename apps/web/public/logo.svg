@@ -1,25 +1,23 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 48" fill="none" aria-label="Stellar Drips">
-  <!-- Droplet/wave mark -->
-  <g transform="translate(0, 4)">
-    <!-- Droplet shape -->
-    <path d="M16 32c-8.837 0-16-6.5-16-14.5S7.163 0 16 0s16 9.5 16 17.5S24.837 32 16 32z" fill="url(#droplet-grad)" opacity="0.9"/>
-    <!-- Wave accent through droplet -->
-    <path d="M4 18c4-4 8-2 12 2s8 4 12-2" stroke="url(#wave-grad)" strokeWidth="1.5" strokeLinecap="round" fill="none"/>
-    <!-- Highlight -->
-    <ellipse cx="12" cy="8" rx="3" ry="5" fill="rgba(255,255,255,0.12)" transform="rotate(-20 12 8)"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 48" fill="none" role="img" aria-label="StellarDrips">
+  <g transform="translate(0 4)">
+    <path
+      d="M18.5 0C13.4 7.8 3.5 17.6 3.5 27.2C3.5 34.3 9.6 40 18.5 40C27.4 40 33.5 34.3 33.5 27.2C33.5 17.6 23.6 7.8 18.5 0Z"
+      fill="#FFFFFF"
+    />
+    <path
+      d="M18.5 11.4C19.9 20.1 22.9 23.1 31.6 24.5C22.9 25.9 19.9 28.9 18.5 37.6C17.1 28.9 14.1 25.9 5.4 24.5C14.1 23.1 17.1 20.1 18.5 11.4Z"
+      fill="#03050A"
+    />
   </g>
-  <!-- Wordmark -->
-  <text x="44" y="34" fontFamily="'Space Grotesk', 'General Sans', sans-serif" fontSize="24" fontWeight="600" letterSpacing="-0.02em" fill="#F4F6FA">
-    Stellar<tspan fill="#5C9DFF">Drips</tspan>
+  <text
+    x="44"
+    y="34.5"
+    fill="#FFFFFF"
+    font-family="Inter, Arial, Helvetica, sans-serif"
+    font-size="28"
+    font-weight="800"
+    letter-spacing="0"
+  >
+    Stellar<tspan fill="#006BFF">Drips</tspan>
   </text>
-  <defs>
-    <linearGradient id="droplet-grad" x1="0" y1="0" x2="32" y2="32">
-      <stop offset="0%" stopColor="#2E7DFF"/>
-      <stop offset="100%" stopColor="#0B46B8"/>
-    </linearGradient>
-    <linearGradient id="wave-grad" x1="4" y1="18" x2="28" y2="18">
-      <stop offset="0%" stopColor="#5C9DFF"/>
-      <stop offset="100%" stopColor="#2E7DFF"/>
-    </linearGradient>
-  </defs>
 </svg>
