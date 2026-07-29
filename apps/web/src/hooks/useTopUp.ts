@@ -3,7 +3,6 @@
 import { useReducer, useCallback } from "react";
 import {
   TransactionBuilder,
-  Transaction,
 } from "@stellar/stellar-sdk";
 import { StellarWalletsKit } from "@creit.tech/stellar-wallets-kit";
 import { useWallet } from "@/context/WalletContext";
@@ -88,7 +87,7 @@ export function useTopUp(): UseTopUpReturn {
 
         dispatch({ type: "submitting" });
 
-        const signedTx = new Transaction(signedTxXdr, passphrase);
+        const signedTx = TransactionBuilder.fromXDR(signedTxXdr, passphrase);
         const sendResult = await server.sendTransaction(signedTx);
 
         if (sendResult.errorResult) {
